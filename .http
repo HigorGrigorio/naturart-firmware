@@ -1,0 +1,7 @@
+// POST 
+POST http://192.168.4.1/wifi
+content-type: application/json
+
+{
+    "password": "Wed, 21 Oct 2015 18:27:50 GMT"
+}
