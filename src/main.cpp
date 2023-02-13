@@ -433,6 +433,22 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
 }
 
 /**
+ * @brief Turn on the built-in LED
+*/
+auto TurnOnBuiltInLed() -> void
+{
+    digitalWrite(LED_BUILTIN, HIGH);
+}
+
+/**
+ * @brief Turn off the built-in LED
+*/
+auto TurnOffBuiltInLed() -> void
+{
+    digitalWrite(LED_BUILTIN, LOW);
+}
+
+/**
  * @brief Sync the WiFi credentials by local host
  *
  * @return ErrorOr<> can be ok() or failure()
@@ -495,6 +511,7 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
               });
 
     server.begin();
+    TurnOnBuiltInLed();
 
     while (!ready)
     {
@@ -503,6 +520,7 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
     }
 
     server.end();
+    TurnOffBuiltInLed();
 
     auto result = WiFiConnect(credentials);
 
@@ -564,8 +582,6 @@ auto SyncWiFi() -> ErrorOr<>
         .message = "Failed to sync WiFi",
     });
 }
-
-
 
 void setup()
 {
