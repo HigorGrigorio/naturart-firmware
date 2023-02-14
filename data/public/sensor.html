@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #f5f5f5;
+      font-family: sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+    }
+
+    .form-container {
+      width: 500px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .input-group .empty-label {
+      position: absolute;
+      left: 0;
+      padding: 10px;
+      margin-left: 20px;
+      color: #333;
+      font-size: 14px;
+      transition: 0.3s;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #333;
+    }
+
+    .not-empty-label {
+      font-size: 12px;
+      background-color: #fff;
+      padding: 0 5px;
+      border-radius: 1px;
+      color: #000;
+      position: absolute;
+      left: 30px;
+      transform: translateY(-7px);
+      transition: 0.3s;
+    }
+
+    .submit-input {
+      margin-top: 10px;
+      width: 100%;
+      height: 40px;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      background-color: #333;
+      color: #fff;
+      cursor: pointer;
+      transition: 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .submit-input:hover {
+      background-color: #444;
+      transform: scale(1.01);
+    }
+
+    h2[name="naturart"] {
+      margin-bottom: 20px;
+    }
+
+    h2[name="naturart"] > span {
+      font-size: 50px;
+      font-weight: 100;
+      color: #333;
+      margin: px 0;
+    }
+
+    h2[name="naturart"] > span:hover {
+      color: #444;
+      border-bottom: #333 1px solid;
+    }
+
+    @media screen and (max-width: 600px) {
+      .form-container {
+        width: 100%;
+        height: 100vh;
+        box-shadow: none;
+        justify-content: center;
+      }
+
+      h2[name="naturart"] {
+        position: fixed;
+        top: 0;
+        z-index: 10;
+        padding-top: 50px;
+      }
+
+      h2[name="naturart"] > span {
+        font-size: 50px;
+      }
+
+      .text {
+        padding: 10px;
+        padding-bottom: 40px;
+        font-size: 24px;
+      }
+    }
+
+    .form-control-empty {
+      border: 1px solid #dd3d3d !important;
+    }
+
+    .text {
+      margin-bottom: 20px;
+      text-align: justify;
+      font-size: 18px;
+    }
+
+    .text-error {
+      min-height: 30px;
+      padding-left: 10px;
+      padding-top: 5px;
+      color: #dd3d3d;
+    }
+
+    .lds-dual-ring {
+      display: inline-block;
+    }
+
+    .lds-dual-ring:after {
+      content: " ";
+      display: block;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      border-color: #fff transparent #fff transparent;
+      animation: lds-dual-ring 1.2s linear infinite;
+      position: relative;
+    }
+
+    @keyframes lds-dual-ring {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .check-icon {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #fff;
+      border-radius: 15px;
+      position: relative;
+      background-color: #fff;
+    }
+
+    .check-icon::before {
+      content: "";
+      width: 10px;
+      height: 15px;
+      border-left: 2px solid #333;
+      border-bottom: 2px solid #333;
+      transform: rotate(45deg) rotateY(180deg);
+      position: absolute;
+      top: 2px;
+      left: 7px;
+    }
+
+    .x-icon {
+      width: 30px;
+      height: 30px;
+      border: 2px solid #333;
+      border-radius: 15px;
+      position: relative;
+      background-color: #fff;
+    }
+
+    .x-icon::before,
+    .x-icon::after {
+      content: "";
+      width: 20px;
+      height: 15px;
+      border-left: 2px solid #333;
+      position: absolute;
+    }
+
+    .x-icon::before {
+      transform: rotate(45deg);
+      top: 12px;
+      left: 10px;
+    }
+
+    .x-icon::after {
+      transform: rotate(-45deg);
+      top: -1px;
+      left: 10px;
+    }
+
+    .message {
+      min-height: 30px;
+      padding-left: 10px;
+      padding-top: 15px;
+      color: #333;
+    }
+  </style>
+
+  <body>
+    <h2 name="naturart">
+      <span>N</span>
+      <span>a</span>
+      <span>t</span>
+      <span>u</span>
+      <span>r</span>
+      <span>a</span>
+      <span>r</span>
+      <span>t</span>
+    </h2>
+    <form method="post" class="form-container">
+      <p class="text">
+        Olá, Obrigado por escolher a Naturart. Para sincronizar o seu produto,
+        basta prencha os campos abaixo.
+      </p>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="username"
+          onkeyup="keyup(this)"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="username" class="empty-label">Nome de usuário</label>
+      </div>
+      <p name="username-error" class="text-error"></p>
+      <div class="input-group">
+        <input
+          type="password"
+          class="form-control"
+          name="password"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="password" class="empty-label">Senha</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="password-error" class="text-error"></p>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="cpf"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="cpf" class="empty-label">CPF</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="cpf-error" class="text-error"></p>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="serialcode"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="serialcode" class="empty-label">Código serial</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="serialcode-error" class="text-error"></p>
+      <span class="submit-input" onclick="onsub(event)"
+        >Submit</span
+      ></span>
+      <p name="fetch-message" class="message"></p>
+    </form>
+    <script>
+      const validate = (name) => {
+        const input = document.querySelector(`input[name="${name}"]`);
+
+        if (input.value === "") {
+          const error = document.querySelector(`p[name="${name}-error"]`);
+          const label = document.querySelector(`label[for="${name}"]`);
+
+          // floating label
+          label.classList = ["empty-label"];
+          input.classList += " form-control-empty";
+          error.innerHTML = "O campo não pode ser vazio";
+          return false;
+        }
+
+        // extreme case for cpf
+        if(name === 'cpf') {
+          // TODO: validate cpf
+        }
+
+        return true;
+      };
+
+      const focusout = (event) => {
+        const { target } = event;
+        validate(target.name);
+      };
+
+      const focusin = (event) => {
+        const { target } = event;
+
+        if (target.value === "") {
+          const { name } = target;
+          const label = document.querySelector(`label[for="${name}"]`);
+          const input = document.querySelector(`input[name="${name}"]`);
+          const error = document.querySelector(`p[name="${name}-error"]`);
+
+          label.classList = ["not-empty-label"];
+          input.classList = ["form-control"];
+          error.innerHTML = "";
+        }
+      };
+
+      const onsub = async (event) => {
+        event.preventDefault();
+        let result = false;
+
+        document.querySelector(".submit-input").innerHTML = "Submit";
+        document.querySelector("p[name='fetch-message']").innerHTML = "";
+
+        if (!validate("username")) {
+          result = true;
+        }
+
+        if (!validate("password")) {
+          result = true;
+        }
+
+        if (!validate("cpf")) {
+          result = true;
+        }
+
+        if (!validate("serialcode")) {
+          result = true;
+        }
+
+        if (result) {
+          return;
+        }
+
+        document.querySelector(
+          ".submit-input"
+        ).innerHTML = `<div class="lds-dual-ring"></div>`;
+
+        const username = document.querySelector('input[name="username"]').value;
+        const password = document.querySelector('input[name="password"]').value;
+        const cpf = document.querySelector('input[name="cpf"]').value;
+        const serialcode = document.querySelector(
+          'input[name="serialcode"]'
+        ).value;
+
+        fetch('/sync', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+          },
+          body: `username=${username}&password=${password}&cpf=${cpf}&serialCode=${serialcode}`
+        })
+        .then((res) => {
+          if(res.status === 200) {
+            document.querySelector(
+              ".submit-input"
+            ).innerHTML = `<div class="check-icon"></div>`;
+          } else {
+            // change button icon
+            document.querySelector(
+              ".submit-input"
+            ).innerHTML = `<div class="x-icon"></div>`;
+            
+            // change fetch message
+            document.querySelector(
+              'p[name="fetch-message"]'
+            ).innerHTML = "Ocorreu um erro ao sincronizar o produto. Tente novamente.";
+
+            //TODO: raise error
+          }
+        })
+        .catch(error => console.error("Error: " + error));
+      };
+    </script>
+  </body>
+</html>

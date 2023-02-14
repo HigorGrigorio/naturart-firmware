@@ -42,7 +42,7 @@ public:
         {
             return {
                 .succeeded = false,
-                .message = arg.name + " is null."};
+                .message = "'" + arg.name + "' is null."};
         }
         return {.succeeded = true};
     }

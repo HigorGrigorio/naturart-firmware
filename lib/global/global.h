@@ -7,4 +7,6 @@
 
 #define SESSION_FILE "/session.txt"
 
+#define SELF_FILE "/self.txt"
+
 #endif // ! _GLOBAL_CONFIG_h_

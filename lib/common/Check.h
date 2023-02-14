@@ -41,7 +41,7 @@
 //
 // For example:
 //   INTERNAL_DEBUG() << "Safe block!";
-#define INTERNAL_DEBUG() check_internal_debug()                            \
+#define INTERNAL_DEBUG() check_internal_debug()                                                  \
                              << "DEBUG at " << __FILE__ << ":" << __LINE__ \
                              << internal::ExitingStream::AddSeparator()
 

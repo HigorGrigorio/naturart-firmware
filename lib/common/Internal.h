@@ -1,6 +1,3 @@
-#ifndef _Internal_h_
-#define _Internal_h_
-
 /**
  * @file internal.h
  * @author your name (you@domain.com)
@@ -11,6 +8,9 @@
  * @copyright Copyright (c) 2023
  *
  */
+
+#ifndef _Internal_h_
+#define _Internal_h_
 
 #include <WString.h>
 #include <HardwareSerial.h>
@@ -60,6 +60,7 @@ namespace internal
         // necessary to support the Check.h macros.
         template <typename T, typename std::enable_if_t<
                                   std::disjunction_v<
+                                      std::is_same<T, char *>,
                                       std::is_same<T, const char *>,
                                       std::is_same<T, String>,
                                       std::is_same<T, char>,
@@ -139,6 +140,9 @@ namespace internal
 // Raw exiting stream. This should be used when building forms of exiting
 // macros. It evaluates to a temporary `ExitingStream` object that can be
 // manipulated, streamed into, and then will exit the program.
+
+//TODO: implement a macro control the flow of the program. (exit or not)
+//TODO: implement a macro to enable or disable debug output
 
 #define check_internal_stream() \
     internal::ExitingStream::Helper() | internal::ExitingStream()

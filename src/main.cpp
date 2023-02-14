@@ -21,11 +21,99 @@
 #endif
 #include "ESPAsyncWebServer.h"
 
+#include <PubSubClient.h>
+
 #include <ErrorOr.h>
 #include <Guard.h>
 #include <Nonnull.h>
 #include <Check.h>
 #include <UtilStringArray.h>
+
+/**
+ * @brief The credential of a sensor
+ */
+struct SensorType
+{
+    String type = "";
+    String id = "";
+};
+
+/**
+ * @brief The group of credentials of a sensor
+ */
+using SensorCredentials = LL<struct SensorType>;
+
+/**
+ * @brief The credentials of a user
+ */
+struct UserEntry
+{
+    String id = "";
+    String name = "";
+    String password = "";
+    String serialCode = "";
+    String cpf = "";
+};
+
+/**
+ * @brief Convert a UserEntry to JSON
+ */
+auto toJson(UserEntry &entry) -> String
+{
+    return String("{") +
+           "\"id\":\"" + entry.id + "\"," +
+           "\"name\":\"" + entry.name + "\"," +
+           "\"password\":\"" + entry.password + "\"," +
+           "\"serialCode\":\"" + entry.serialCode + "\"," +
+           "\"cpf\":\"" + entry.cpf + "\"" +
+           "}";
+}
+
+/**
+ * @brief The credentials of a WiFi network
+ */
+struct WiFiCredentials
+{
+    String ssid = "";
+    String password = "";
+};
+
+/**
+ * STATIC VARIABLES
+ */
+
+// The server
+static AsyncWebServer server(80);
+
+// The DNS server
+static DNSServer dnsServer;
+
+// The WiFi client
+static WiFiClient wifiClient;
+
+// The MQTT client
+static PubSubClient mqttClient(wifiClient);
+
+// An helper to sync the WiFi by the web host
+static bool syncWiFiByWebHostHelper = false;
+
+// The WiFi credentials
+static WiFiCredentials wifiCredentials;
+
+// The user credentials
+static UserEntry userEntry;
+
+// The sensor credentials
+static SensorCredentials sensorCredentials;
+
+// The sync helper. It's used to sync the sensor credentials by the web host.
+static bool syncSensorCredentialsHelper = false;
+
+// The local IP.
+static IPAddress localIP(192, 168, 1, 1);
+
+// Guard if the server is initialized.
+static bool serverInitialized = false;
 
 /**
  * @brief Write in a file
@@ -202,17 +290,11 @@ auto CreateFile(String path) -> ErrorOr<>
  *
  * @param path The path of the file
  *
- * @return ErrorOr<> can be ok() or failure()
+ * @return bool true if the file exists, false otherwise
  */
-auto FileExists(String path) -> ErrorOr<>
+auto FileExists(String path) -> bool
 {
-    if (LittleFS.exists(path))
-        return ok();
-
-    return failure({
-        .context = "FileExists",
-        .message = "File does not exist",
-    });
+    return LittleFS.exists(path);
 }
 
 /**
@@ -262,15 +344,6 @@ auto CloseFile(File &file) -> ErrorOr<>
 }
 
 /**
- * @brief The credentials of a WiFi network
- */
-struct WiFiCredentials
-{
-    String ssid;
-    String password;
-};
-
-/**
  * @brief Connect to a WiFi network
  *
  * @param WiFiCredentials The credentials of the WiFi network
@@ -284,7 +357,6 @@ auto WiFiConnect(WiFiCredentials &credentials) -> ErrorOr<>
 
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
     {
-        INTERNAL_DEBUG() << "Failed to connect to WiFi.";
         return failure({
             .context = "WiFiConnect",
             .message = "Failed to connect to WiFi",
@@ -421,8 +493,6 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
 
     if (!result2.ok())
     {
-        INTERNAL_DEBUG() << "Failed to connect to WiFi";
-
         return failure({
             .context = "SyncWiFiByFileSystem",
             .message = "Failed to connect to WiFi",
@@ -434,7 +504,7 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
 
 /**
  * @brief Turn on the built-in LED
-*/
+ */
 auto TurnOnBuiltInLed() -> void
 {
     digitalWrite(LED_BUILTIN, HIGH);
@@ -442,10 +512,113 @@ auto TurnOnBuiltInLed() -> void
 
 /**
  * @brief Turn off the built-in LED
-*/
+ */
 auto TurnOffBuiltInLed() -> void
 {
     digitalWrite(LED_BUILTIN, LOW);
+}
+
+/**
+ * @brief Initialize the web server.
+ */
+auto InitWebServer() -> ErrorOr<>
+{
+    if (!serverInitialized)
+    {
+        INTERNAL_DEBUG() << "Initializing web server...";
+
+        IPAddress ip(192, 168, 1, 1);
+
+        // init web server
+        dnsServer.start(53, "*", ip);
+
+        INTERNAL_DEBUG() << "Starting web server...";
+        INTERNAL_DEBUG() << "IP address: " << ip.toString();
+
+        server.on("/wifi", HTTP_GET,
+                  [](AsyncWebServerRequest *request)
+                  {
+                      INTERNAL_DEBUG() << "GET /wifi";
+                      request->send(LittleFS, "/public/wifi.html", String(), false);
+                  });
+
+        server.on("/wifi", HTTP_POST,
+                  [&](AsyncWebServerRequest *request)
+                  {
+                      INTERNAL_DEBUG() << "POST /wifi";
+                      auto *ssid = request->getParam("ssid", true);
+                      auto *password = request->getParam("password", true);
+
+                      GuardArgumentCollection args = GuardArgumentCollection();
+
+                      args.add(IGuardArgument{.any = ssid, .name = "SSID"});
+                      args.add(IGuardArgument{.any = password, .name = "Password"});
+
+                      auto result = Guard::againstNullBulk(args);
+
+                      if (!result.succeeded)
+                      {
+                          INTERNAL_DEBUG() << "Guard failed: " << result.message;
+                          request->send(LittleFS, "/public/wifi_error.html", String(), false);
+                          return;
+                      }
+
+                      wifiCredentials = {
+                          .ssid = ssid->value(),
+                          .password = password->value(),
+                      };
+
+                      request->send(200, "text/plain", "OK");
+                      syncWiFiByWebHostHelper = true;
+                  });
+
+        server.on("/sync", HTTP_GET,
+                  [](AsyncWebServerRequest *request)
+                  {
+                      INTERNAL_DEBUG() << "GET /sync";
+                      request->send(LittleFS, "/public/sensor.html", String(), false);
+                  });
+
+        server.on("/sync", HTTP_POST,
+                  [&](AsyncWebServerRequest *request)
+                  {
+                      INTERNAL_DEBUG() << "POST /sync";
+                      auto *username = request->getParam("username", true);
+                      auto *password = request->getParam("password", true);
+                      auto *cpf = request->getParam("cpf", true);
+                      auto *serialCode = request->getParam("serialCode", true);
+
+                      GuardArgumentCollection args = GuardArgumentCollection();
+
+                      args.add(IGuardArgument{.any = username, .name = "Username"});
+                      args.add(IGuardArgument{.any = password, .name = "Password"});
+                      args.add(IGuardArgument{.any = cpf, .name = "CPF"});
+                      args.add(IGuardArgument{.any = serialCode, .name = "Serial Core"});
+
+                      auto result = Guard::againstNullBulk(args);
+
+                      if (!result.succeeded)
+                      {
+                          INTERNAL_DEBUG() << "Guard failed: " << result.message;
+                          request->send(206, "text/plain", "Conteudos parciais");
+                          return;
+                      }
+
+                      userEntry = {
+                          .name = username->value(),
+                          .password = password->value(),
+                          .serialCode = serialCode->value(),
+                          .cpf = cpf->value(),
+                      };
+
+                      syncSensorCredentialsHelper = true;
+
+                      request->send(200, "text/plain", "OK");
+                  });
+
+        serverInitialized = true;
+    }
+    return ok();
 }
 
 /**
@@ -457,63 +630,24 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing WiFi by local host...";
 
-    WiFi.mode(WIFI_AP_STA);
+    // Need initialization of server.
+    auto result = InitWebServer();
 
-    WiFi.softAPConfig(
-        IPAddress(192, 168, 1, 1),
-        IPAddress(192, 168, 1, 1),
-        IPAddress(255, 255, 255, 0));
-
-    WiFi.softAP("Configure o sensor Naturart");
-
-    DNSServer dnsServer;
-    dnsServer.start(53, "*", IPAddress(192, 168, 1, 1));
-
-    AsyncWebServer server(80);
-    WiFiCredentials credentials;
-    bool ready = false;
-
-    server.on("/wifi", HTTP_GET,
-              [](AsyncWebServerRequest *request)
-              {
-                  INTERNAL_DEBUG() << "GET /wifi";
-                  request->send(LittleFS, "/public/wifi.html", String(), false);
-              });
-
-    server.on("/wifi", HTTP_POST,
-              [&](AsyncWebServerRequest *request)
-              {
-                  INTERNAL_DEBUG() << "POST /wifi";
-                  auto *ssid = request->getParam("ssid", true);
-                  auto *password = request->getParam("password", true);
-
-                  GuardArgumentCollection args = GuardArgumentCollection();
-
-                  args.add(IGuardArgument{.any = ssid, .name = "SSID"});
-                  args.add(IGuardArgument{.any = password, .name = "Password"});
-
-                  auto result = Guard::againstNullBulk(args);
-
-                  if (!result.succeeded)
-                  {
-                      INTERNAL_DEBUG() << "Guard failed: " << result.message;
-                      request->send(LittleFS, "/public/wifi_error.html", String(), false);
-                      return;
-                  }
-
-                  credentials = {
-                      .ssid = ssid->value(),
-                      .password = password->value(),
-                  };
-
-                  request->send(200, "text/plain", "OK");
-                  ready = true;
-              });
+    if (!result.ok())
+    {
+        INTERNAL_DEBUG() << result.error();
+        return failure({
+            .context = "SyncWiFiByWebHost",
+            .message = "Failed to init the web server",
+        });
+    }
 
     server.begin();
     TurnOnBuiltInLed();
 
-    while (!ready)
+    INTERNAL_DEBUG() << "Server started. Waiting for WiFi credentials...";
+
+    while (!syncWiFiByWebHostHelper)
     {
         dnsServer.processNextRequest();
         delay(10);
@@ -522,9 +656,13 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
     server.end();
     TurnOffBuiltInLed();
 
-    auto result = WiFiConnect(credentials);
+    syncWiFiByWebHostHelper = false;
 
-    if (!result.ok())
+    INTERNAL_DEBUG() << "WiFi credentials received. Connecting to WiFi...";
+
+    auto result1 = WiFiConnect(wifiCredentials);
+
+    if (!result1.ok())
     {
         INTERNAL_DEBUG() << "Failed to connect to WiFi";
 
@@ -534,7 +672,7 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
         });
     }
 
-    auto saveResult = SaveWiFiCredentials(credentials);
+    auto saveResult = SaveWiFiCredentials(wifiCredentials);
 
     if (!saveResult.ok())
     {
@@ -583,9 +721,149 @@ auto SyncWiFi() -> ErrorOr<>
     });
 }
 
+/**
+ * @brief Sync the sensor credentials by local host.
+ */
+auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentials>
+{
+
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        INTERNAL_DEBUG() << "WiFi is not connected";
+        ESP.restart();
+        return failure({
+            .context = "TryGetSensorCredentials",
+            .message = "WiFi is not connected",
+        });
+    }
+
+    // using a fake broker to monitorize the connection.
+    const char *host = "broker.mqttdashboard.com";
+    bool receive = false;
+
+    // TODO: get the real uuid.
+    entry.id = "123456789";
+
+    // TODO: impl a real feature. This is just a test.
+    //   The real feature just need to send the user entry to server and subscribe to the topic with the id
+    // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
+    // the device will save the result to the file system.
+
+    mqttClient.setServer(host, 8000);
+    mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
+                           { INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; receive = true; });
+
+    mqttClient.publish("sync", toJson(entry).c_str());
+
+    while (!receive)
+    {
+        delay(10);
+    }
+
+    INTERNAL_DEBUG() << "Received";
+    return ok<SensorCredentials>({});
+}
+
+auto SyncSensorFromNaturartServer() -> ErrorOr<SensorCredentials>
+{
+    INTERNAL_DEBUG() << "Syncing sensor credentials from Naturart server...";
+
+    // Requires WiFi to be disconnected to avoid conflicts with the web server.
+    if (WiFi.isConnected())
+    {
+        WiFi.disconnect();
+    }
+
+    auto result = InitWebServer();
+
+    if (!result.ok())
+    {
+        INTERNAL_DEBUG() << result.error();
+        return failure({
+            .context = "SyncSensorCredentialsFromNaturartServer",
+            .message = "Failed to init the web server",
+        });
+    }
+
+    server.begin();
+    TurnOnBuiltInLed();
+
+    // TODO: add a timeout.
+    // await for the user entry.
+    while (!syncSensorCredentialsHelper)
+    {
+        dnsServer.processNextRequest();
+        delay(10);
+    }
+
+    server.end();
+    TurnOffBuiltInLed();
+
+    // to evit conflits.
+    syncSensorCredentialsHelper = false;
+
+    // needs validate the user entry.
+    auto result1 = SyncWiFiByFileSystem();
+
+    if (!result1.ok())
+    {
+        INTERNAL_DEBUG() << result1.error();
+        return failure({
+            .context = "SyncSensorCredentialsFromNaturartServer",
+            .message = "Failed to sync WiFi by file system",
+        });
+    }
+
+    // send the entry for web broker.
+    auto result2 = GetSensorCredentialsFromBroker(userEntry);
+
+    if (!result2.ok())
+    {
+        INTERNAL_DEBUG() << result2.error();
+        return failure({
+            .context = "GetSensorCredentialsFromNaturartServer",
+            .message = "Failed to get sensor credentials",
+        });
+    }
+
+    sensorCredentials = result2.unwrap();
+
+    return ok(sensorCredentials);
+}
+
+/**
+ * @brief Sync the sensor credentials
+ */
+auto SyncSensor() -> ErrorOr<>
+{
+    if (!FileExists(SELF_FILE))
+    {
+        CreateFile(SELF_FILE);
+    }
+
+    auto result = SyncSensorFromNaturartServer();
+
+    if (result.ok())
+    {
+        INTERNAL_DEBUG() << "Synced sensor credentials from Naturart server";
+        return ok();
+    }
+
+    return ok();
+}
+
 void setup()
 {
     Serial.begin(9600);
+
+    WiFi.mode(WIFI_AP_STA);
+
+    WiFi.softAPConfig(
+        localIP,
+        localIP,
+        IPAddress(255, 255, 255, 0));
+
+    WiFi.softAP("Configure o sensor Naturart");
 
     if (!LittleFS.begin())
     {
@@ -593,11 +871,19 @@ void setup()
         return;
     }
 
-    auto result = SyncWiFi();
+    auto result1 = SyncWiFi();
 
-    if (!result.ok())
+    if (!result1.ok())
     {
-        INTERNAL_DEBUG() << result.error();
+        INTERNAL_DEBUG() << result1.error();
+        return;
+    }
+
+    auto result2 = SyncSensor();
+
+    if (!result2.ok())
+    {
+        INTERNAL_DEBUG() << result2.error();
         return;
     }
 }
