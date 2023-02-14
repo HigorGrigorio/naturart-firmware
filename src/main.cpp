@@ -723,10 +723,13 @@ auto SyncWiFi() -> ErrorOr<>
 
 /**
  * @brief Sync the sensor credentials by local host.
+ * 
+ * @return ErrorOr<> can be ok() or failure()
  */
 auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentials>
 {
 
+    INTERNAL_DEBUG() << "Syncing sensor credentials by naturart broker...";
     if (WiFi.status() != WL_CONNECTED)
     {
         INTERNAL_DEBUG() << "WiFi is not connected";
@@ -738,8 +741,8 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     }
 
     // using a fake broker to monitorize the connection.
-    const char *host = "broker.mqttdashboard.com";
-    bool receive = false;
+    const char *host = "broker.hivemq.com";
+    bool receive = true;
 
     // TODO: get the real uuid.
     entry.id = "123456789";

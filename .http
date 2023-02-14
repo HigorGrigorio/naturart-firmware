@@ -1,7 +1,6 @@
-// POST 
-POST http://192.168.4.1/wifi
-content-type: application/json
+POST http://192.168.1.1/wifi
+Content-Type: application/x-www-form-urlencoded
 
-{
-    "password": "Wed, 21 Oct 2015 18:27:50 GMT"
-}
+POST http://192.168.1.1/sync
+Content-Type: application/x-www-form-urlencoded
+username=user&password=123456&cpf=123456&serialCode=123456
