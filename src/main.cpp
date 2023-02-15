@@ -29,8 +29,8 @@
 #include <Check.h>
 #include <UtilStringArray.h>
 
-#include <wifi-connection.h>
-#include <file.h>
+#include <sensor-credentials.h>
+#include <wifi-credentials.h>
 
 /**
  * @brief The credentials of a user
@@ -94,45 +94,6 @@ static IPAddress localIP(192, 168, 1, 1);
 
 // Guard if the server is initialized.
 static bool serverInitialized = false;
-
-
-/**
- * @brief Get the WiFi credentials
- *
- * @return ErrorOr<WiFiCredentials> can be the credentials or failure()
- */
-auto GetWiFiCredentials() -> ErrorOr<WiFiCredentials>
-{
-    auto readResult = ReadFromFile(SESSION_FILE, '\n');
-
-    if (!readResult.ok())
-    {
-        INTERNAL_DEBUG() << "Failed to read the session file.";
-        return failure(readResult.error());
-    }
-
-    // unwrap the lines of file.
-    auto lines = readResult.unwrap();
-
-    // check if the file has 2 lines.
-    if (lines.length() != 2)
-    {
-        INTERNAL_DEBUG() << "The session file has not 2 lines.";
-        return failure({
-            .context = "GetWiFiCredentials",
-            .message = "The session file has not 2 lines",
-        });
-    }
-
-    auto first = *lines.at(0);
-    auto second = *lines.at(1);
-
-    // remove the last character of the lines.
-    return ok<WiFiCredentials>({
-        .ssid = first.substring(0, first.length() - 1),
-        .password = second.substring(0, second.length() - 1),
-    });
-}
 
 auto GetUserEntry() -> ErrorOr<UserEntry>
 {
