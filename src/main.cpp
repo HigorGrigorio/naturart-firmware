@@ -343,6 +343,20 @@ auto CloseFile(File &file) -> ErrorOr<>
     return ok();
 }
 
+auto IsEmptyFile(String path) -> bool
+{
+    auto file = LittleFS.open(path, "r");
+    bool empty = true;
+
+    if (file)
+    {
+        empty = file.size() == 0;
+        file.close();
+    }
+
+    return empty;
+}
+
 /**
  * @brief Connect to a WiFi network
  *
@@ -385,7 +399,7 @@ auto WiFiDisconnect() -> ErrorOr<>
  */
 auto GetWiFiCredentials() -> ErrorOr<WiFiCredentials>
 {
-    auto readResult = ReadFromFile("/session.txt", '\n');
+    auto readResult = ReadFromFile(SESSION_FILE, '\n');
 
     if (!readResult.ok())
     {
@@ -416,6 +430,43 @@ auto GetWiFiCredentials() -> ErrorOr<WiFiCredentials>
     });
 }
 
+auto GetUserEntry() -> ErrorOr<UserEntry>
+{
+    auto readResult = ReadFromFile(ENTRY_FILE, '\n');
+
+    if (!readResult.ok())
+    {
+        INTERNAL_DEBUG() << "Failed to read the session file.";
+        return failure(readResult.error());
+    }
+
+    // unwrap the lines of file.
+    auto lines = readResult.unwrap();
+
+    // check if the file has 4 lines.
+    if (lines.length() != 4)
+    {
+        INTERNAL_DEBUG() << "The session file has not 4 lines.";
+        return failure({
+            .context = "GetUserEntry",
+            .message = "The session file has not 4 lines",
+        });
+    }
+
+    auto first = *lines.at(0);
+    auto second = *lines.at(1);
+    auto third = *lines.at(2);
+    auto fourth = *lines.at(3);
+
+    // remove the last character of the lines.
+    return ok<UserEntry>({
+        .name = second.substring(0, second.length() - 1),
+        .password = third.substring(0, third.length() - 1),
+        .serialCode = fourth.substring(0, fourth.length() - 1),
+        .cpf = first.substring(0, first.length() - 1),
+    });
+}
+
 /**
  * @brief Save the WiFi credentials
  *
@@ -428,12 +479,12 @@ auto SaveWiFiCredentials(WiFiCredentials credentials) -> ErrorOr<>
     INTERNAL_DEBUG() << "Saving WiFi credentials...";
     File file;
 
-    auto createResult = CreateFile("/session.txt");
+    auto createResult = CreateFile(SESSION_FILE);
 
     if (!createResult.ok())
     {
         INTERNAL_DEBUG() << createResult.error();
-        auto openResult = OpenFile("/session.txt", "w");
+        auto openResult = OpenFile(SESSION_FILE, "w");
 
         if (!openResult.ok())
         {
@@ -518,6 +569,33 @@ auto TurnOffBuiltInLed() -> void
     digitalWrite(LED_BUILTIN, LOW);
 }
 
+auto SaveUserEntry(UserEntry &entry) -> ErrorOr<>
+{
+    INTERNAL_DEBUG() << "Saving user entry...";
+
+    if (!FileExists(ENTRY_FILE))
+    {
+        CreateFile(ENTRY_FILE);
+    }
+
+    auto openResult = OpenFile(ENTRY_FILE, "w");
+
+    if (!openResult.ok())
+    {
+        INTERNAL_DEBUG() << "Failed to open the file.";
+        return failure(openResult.error());
+    }
+
+    File file = openResult.unwrap();
+
+    file.println(entry.cpf);
+    file.println(entry.name);
+    file.println(entry.password);
+    file.println(entry.serialCode);
+
+    return ok();
+}
+
 /**
  * @brief Initialize the web server.
  */
@@ -528,6 +606,10 @@ auto InitWebServer() -> ErrorOr<>
         INTERNAL_DEBUG() << "Initializing web server...";
 
         IPAddress ip(192, 168, 1, 1);
+
+        WiFi.softAPConfig(ip, ip, IPAddress(255, 255, 255, 0));
+
+        WiFi.softAP("Configure o sensor Naturart");
 
         // init web server
         dnsServer.start(53, "*", ip);
@@ -611,9 +693,13 @@ auto InitWebServer() -> ErrorOr<>
                           .cpf = cpf->value(),
                       };
 
-                      syncSensorCredentialsHelper = true;
+                      auto result1 = SaveUserEntry(userEntry);
 
-                      request->send(200, "text/plain", "OK");
+                      if (result1.ok())
+                      {
+                          request->send(200, "text/plain", "OK");
+                          ESP.restart();
+                      }
                   });
 
         serverInitialized = true;
@@ -723,7 +809,7 @@ auto SyncWiFi() -> ErrorOr<>
 
 /**
  * @brief Sync the sensor credentials by local host.
- * 
+ *
  * @return ErrorOr<> can be ok() or failure()
  */
 auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentials>
@@ -752,7 +838,19 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
     // the device will save the result to the file system.
 
-    mqttClient.setServer(host, 8000);
+    mqttClient.setServer(host, 1883);
+
+    INTERNAL_DEBUG() << "Connecting to MQTT broker...";
+
+    while (!mqttClient.connected())
+    {
+        mqttClient.connect("", "", "");
+        delay(500);
+    }
+
+    INTERNAL_DEBUG() << "Connected to MQTT broker";
+
+    mqttClient.subscribe("sync");
     mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
                            { INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; receive = true; });
 
@@ -839,17 +937,33 @@ auto SyncSensorFromNaturartServer() -> ErrorOr<SensorCredentials>
  */
 auto SyncSensor() -> ErrorOr<>
 {
-    if (!FileExists(SELF_FILE))
+    if (IsEmptyFile(ENTRY_FILE))
     {
-        CreateFile(SELF_FILE);
+        SyncSensorFromNaturartServer();
     }
 
-    auto result = SyncSensorFromNaturartServer();
+    auto entryResult = GetUserEntry();
 
-    if (result.ok())
+    if (!entryResult.ok())
     {
-        INTERNAL_DEBUG() << "Synced sensor credentials from Naturart server";
-        return ok();
+        INTERNAL_DEBUG() << entryResult.error();
+        return failure({
+            .context = "SyncSensor",
+            .message = "Failed to get user entry",
+        });
+    }
+
+    userEntry = entryResult.unwrap();
+
+    auto result = GetSensorCredentialsFromBroker(userEntry);
+
+    if (!result.ok())
+    {
+        INTERNAL_DEBUG() << result.error();
+        return failure({
+            .context = "SyncSensor",
+            .message = "Failed to get sensor credentials",
+        });
     }
 
     return ok();
@@ -860,13 +974,6 @@ void setup()
     Serial.begin(9600);
 
     WiFi.mode(WIFI_AP_STA);
-
-    WiFi.softAPConfig(
-        localIP,
-        localIP,
-        IPAddress(255, 255, 255, 0));
-
-    WiFi.softAP("Configure o sensor Naturart");
 
     if (!LittleFS.begin())
     {

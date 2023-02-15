@@ -268,8 +268,34 @@
 
             const form = document.querySelector('form');
 
-            form.submit();
-        }
+            fetch({ 
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                },
+                body: `ssid=${ssid}&password=${password}`
+             })
+             .then((res) => {
+                if(res.status === 200) {
+                    document.querySelector(
+                    ".submit-input"
+                    ).innerHTML = `<div class="check-icon"></div>`;
+                } else {
+                    // change button icon
+                    document.querySelector(
+                    ".submit-input"
+                    ).innerHTML = `<div class="x-icon"></div>`;
+                    
+                    // change fetch message
+                    document.querySelector(
+                    'p[name="fetch-message"]'
+                    ).innerHTML = "Ocorreu um erro ao sincronizar o produto. Tente novamente.";
+
+                    //TODO: raise error
+                }
+                })
+            .catch(error => console.error("Error: " + error));
+            }
     </script>
 </body>
 

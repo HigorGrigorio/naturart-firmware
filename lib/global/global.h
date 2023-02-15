@@ -9,4 +9,6 @@
 
 #define SELF_FILE "/self.txt"
 
+#define ENTRY_FILE "/entry.txt"
+
 #endif // ! _GLOBAL_CONFIG_h_
