@@ -650,8 +650,18 @@ auto InitWebServer() -> ErrorOr<>
                           .password = password->value(),
                       };
 
+                      auto saveResult = SaveWiFiCredentials(wifiCredentials);
+
+                      if (!saveResult.ok())
+                      {
+                          INTERNAL_DEBUG() << "Failed to save WiFi credentials: " << saveResult.error();
+                          request->send(LittleFS, "/public/wifi_error.html", String(), false);
+                          return;
+                      }
+
+                      // TODO: Send a response to the client
                       request->send(200, "text/plain", "OK");
-                      syncWiFiByWebHostHelper = true;
+                      ESP.restart();
                   });
 
         server.on("/sync", HTTP_GET,
@@ -974,6 +984,8 @@ void setup()
     Serial.begin(9600);
 
     WiFi.mode(WIFI_AP_STA);
+
+    pinMode(BUILTIN_LED, OUTPUT);
 
     if (!LittleFS.begin())
     {
