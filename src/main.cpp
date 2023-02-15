@@ -29,6 +29,8 @@
 #include <Check.h>
 #include <UtilStringArray.h>
 
+#include <wifi-connection.h>
+
 /**
  * @brief The credential of a sensor
  */
@@ -68,15 +70,6 @@ auto toJson(UserEntry &entry) -> String
            "\"cpf\":\"" + entry.cpf + "\"" +
            "}";
 }
-
-/**
- * @brief The credentials of a WiFi network
- */
-struct WiFiCredentials
-{
-    String ssid = "";
-    String password = "";
-};
 
 /**
  * STATIC VARIABLES
@@ -357,40 +350,7 @@ auto IsEmptyFile(String path) -> bool
     return empty;
 }
 
-/**
- * @brief Connect to a WiFi network
- *
- * @param WiFiCredentials The credentials of the WiFi network
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto WiFiConnect(WiFiCredentials &credentials) -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Connecting to WiFi...";
-    WiFi.begin(credentials.ssid, credentials.password);
 
-    if (WiFi.waitForConnectResult() != WL_CONNECTED)
-    {
-        return failure({
-            .context = "WiFiConnect",
-            .message = "Failed to connect to WiFi",
-        });
-    }
-
-    return ok();
-}
-
-/**
- * @brief Disconnect from a WiFi network
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto WiFiDisconnect() -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Disconnecting from WiFi...";
-    WiFi.disconnect(true);
-    return ok();
-}
 
 /**
  * @brief Get the WiFi credentials
@@ -985,7 +945,8 @@ void setup()
 
     WiFi.mode(WIFI_AP_STA);
 
-    pinMode(BUILTIN_LED, OUTPUT);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, LOW);
 
     if (!LittleFS.begin())
     {
