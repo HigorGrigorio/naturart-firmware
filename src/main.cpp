@@ -1,12 +1,9 @@
 /**
  * @file main.cpp
- *
  * @brief The main file of the project
- *
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  */
 
-#include <global.h>
 
 #include <Arduino.h>
 #include <LittleFS.h>

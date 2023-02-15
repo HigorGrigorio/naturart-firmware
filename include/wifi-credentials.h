@@ -12,7 +12,7 @@
 
 #include <file.h>
 #include <wifi-connection.h>
-#include <global.h>
+#include <config/file-sistem.h>
 
 /**
  * @brief Get the WiFi credentials

@@ -11,7 +11,7 @@
 #define _UserEntry_h_
 
 #include <file.h>
-#include <global.h>
+#include <config/file-sistem.h>
 
 /**
  * @brief The credentials of a user
