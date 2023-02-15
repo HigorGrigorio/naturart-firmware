@@ -12,51 +12,16 @@
 #include <LittleFS.h>
 
 #include <DNSServer.h>
-#ifdef ESP32
-#include <WiFi.h>
-#include <AsyncTCP.h>
-#elif defined(ESP8266)
-#include <ESP8266WiFi.h>
-#include <ESPAsyncTCP.h>
-#endif
 #include "ESPAsyncWebServer.h"
 
 #include <PubSubClient.h>
 
-#include <ErrorOr.h>
 #include <Guard.h>
-#include <Nonnull.h>
-#include <Check.h>
-#include <UtilStringArray.h>
 
 #include <sensor-credentials.h>
 #include <wifi-credentials.h>
+#include <user-entry.h>
 
-/**
- * @brief The credentials of a user
- */
-struct UserEntry
-{
-    String id = "";
-    String name = "";
-    String password = "";
-    String serialCode = "";
-    String cpf = "";
-};
-
-/**
- * @brief Convert a UserEntry to JSON
- */
-auto toJson(UserEntry &entry) -> String
-{
-    return String("{") +
-           "\"id\":\"" + entry.id + "\"," +
-           "\"name\":\"" + entry.name + "\"," +
-           "\"password\":\"" + entry.password + "\"," +
-           "\"serialCode\":\"" + entry.serialCode + "\"," +
-           "\"cpf\":\"" + entry.cpf + "\"" +
-           "}";
-}
 
 /**
  * STATIC VARIABLES
@@ -95,92 +60,6 @@ static IPAddress localIP(192, 168, 1, 1);
 // Guard if the server is initialized.
 static bool serverInitialized = false;
 
-auto GetUserEntry() -> ErrorOr<UserEntry>
-{
-    auto readResult = ReadFromFile(ENTRY_FILE, '\n');
-
-    if (!readResult.ok())
-    {
-        INTERNAL_DEBUG() << "Failed to read the session file.";
-        return failure(readResult.error());
-    }
-
-    // unwrap the lines of file.
-    auto lines = readResult.unwrap();
-
-    // check if the file has 4 lines.
-    if (lines.length() != 4)
-    {
-        INTERNAL_DEBUG() << "The session file has not 4 lines.";
-        return failure({
-            .context = "GetUserEntry",
-            .message = "The session file has not 4 lines",
-        });
-    }
-
-    auto first = *lines.at(0);
-    auto second = *lines.at(1);
-    auto third = *lines.at(2);
-    auto fourth = *lines.at(3);
-
-    // remove the last character of the lines.
-    return ok<UserEntry>({
-        .name = second.substring(0, second.length() - 1),
-        .password = third.substring(0, third.length() - 1),
-        .serialCode = fourth.substring(0, fourth.length() - 1),
-        .cpf = first.substring(0, first.length() - 1),
-    });
-}
-
-/**
- * @brief Save the WiFi credentials
- *
- * @param credentials The credentials of the WiFi network
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto SaveWiFiCredentials(WiFiCredentials credentials) -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Saving WiFi credentials...";
-    File file;
-
-    auto createResult = CreateFile(SESSION_FILE);
-
-    if (!createResult.ok())
-    {
-        INTERNAL_DEBUG() << createResult.error();
-        auto openResult = OpenFile(SESSION_FILE, "w");
-
-        if (!openResult.ok())
-        {
-            INTERNAL_DEBUG() << openResult.error();
-            return failure({
-                .context = "SaveWiFiCredentials",
-                .message = "Failed to create and open the file",
-            });
-        }
-
-        INTERNAL_DEBUG() << "File opened.";
-        file = openResult.unwrap();
-    }
-
-    // Can't use else because of the return in the if statement.
-    // Cannot open the file.
-    if (!file)
-    {
-        return failure({
-            .context = "SaveWiFiCredentials",
-            .message = "Failed to open the file",
-        });
-    }
-
-    file.println(credentials.ssid);
-    file.println(credentials.password);
-
-    CloseFile(file);
-
-    return ok();
-}
 
 /**
  * @brief Sync the WiFi credentials by file system
@@ -232,33 +111,6 @@ auto TurnOnBuiltInLed() -> void
 auto TurnOffBuiltInLed() -> void
 {
     digitalWrite(LED_BUILTIN, LOW);
-}
-
-auto SaveUserEntry(UserEntry &entry) -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Saving user entry...";
-
-    if (!FileExists(ENTRY_FILE))
-    {
-        CreateFile(ENTRY_FILE);
-    }
-
-    auto openResult = OpenFile(ENTRY_FILE, "w");
-
-    if (!openResult.ok())
-    {
-        INTERNAL_DEBUG() << "Failed to open the file.";
-        return failure(openResult.error());
-    }
-
-    File file = openResult.unwrap();
-
-    file.println(entry.cpf);
-    file.println(entry.name);
-    file.println(entry.password);
-    file.println(entry.serialCode);
-
-    return ok();
 }
 
 /**
@@ -529,7 +381,7 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
                            { INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; receive = true; });
 
-    mqttClient.publish("sync", toJson(entry).c_str());
+    mqttClient.publish("sync", entry.ToJson().c_str());
 
     while (!receive)
     {

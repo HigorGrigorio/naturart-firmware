@@ -52,4 +52,54 @@ auto GetWiFiCredentials() -> ErrorOr<WiFiCredentials>
     });
 }
 
+/**
+ * @brief Save the WiFi credentials
+ *
+ * @param credentials The credentials of the WiFi network
+ *
+ * @return ErrorOr<> can be ok() or failure()
+ */
+auto SaveWiFiCredentials(WiFiCredentials credentials) -> ErrorOr<>
+{
+    INTERNAL_DEBUG() << "Saving WiFi credentials...";
+    File file;
+
+    auto createResult = CreateFile(SESSION_FILE);
+
+    if (!createResult.ok())
+    {
+        INTERNAL_DEBUG() << createResult.error();
+        auto openResult = OpenFile(SESSION_FILE, "w");
+
+        if (!openResult.ok())
+        {
+            INTERNAL_DEBUG() << openResult.error();
+            return failure({
+                .context = "SaveWiFiCredentials",
+                .message = "Failed to create and open the file",
+            });
+        }
+
+        INTERNAL_DEBUG() << "File opened.";
+        file = openResult.unwrap();
+    }
+
+    // Can't use else because of the return in the if statement.
+    // Cannot open the file.
+    if (!file)
+    {
+        return failure({
+            .context = "SaveWiFiCredentials",
+            .message = "Failed to open the file",
+        });
+    }
+
+    file.println(credentials.ssid);
+    file.println(credentials.password);
+
+    CloseFile(file);
+
+    return ok();
+}
+
 #endif // ! _WiFiCredentials_h_
