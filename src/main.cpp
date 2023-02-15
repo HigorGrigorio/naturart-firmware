@@ -33,20 +33,6 @@
 #include <file.h>
 
 /**
- * @brief The credential of a sensor
- */
-struct SensorType
-{
-    String type = "";
-    String id = "";
-};
-
-/**
- * @brief The group of credentials of a sensor
- */
-using SensorCredentials = LL<struct SensorType>;
-
-/**
  * @brief The credentials of a user
  */
 struct UserEntry
