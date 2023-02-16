@@ -5,6 +5,9 @@
  */
 
 #include <config/system.h>
+#include <config/dns-server.h>
+#include <config/file-sistem.h>
+#include <config/web-server.h>
 
 #include <Arduino.h>
 #include <LittleFS.h>
@@ -18,25 +21,17 @@
 #include <user-entry.h>
 #include <web-server-factory.h>
 #include <blink-led.h>
+#include <dns-server-factory.h>
 
 /**
  * STATIC VARIABLES
  */
-
-// The server
-static AsyncWebServer server(80);
-
-// The DNS server
-static DNSServer dnsServer;
 
 // The WiFi client
 static WiFiClient wifiClient;
 
 // The MQTT client
 static PubSubClient mqttClient(wifiClient);
-
-// An helper to sync the WiFi by the web host
-static bool syncWiFiByWebHostHelper = false;
 
 // The WiFi credentials
 static WiFiCredentials wifiCredentials;
@@ -46,16 +41,6 @@ static UserEntry userEntry;
 
 // The sensor credentials
 static SensorCredentials sensorCredentials;
-
-// The sync helper. It's used to sync the sensor credentials by the web host.
-static bool syncSensorCredentialsHelper = false;
-
-// The local IP.
-static IPAddress localIP(192, 168, 1, 1);
-
-// Guard if the server is initialized.
-static bool serverInitialized = false;
-
 
 /**
  * @brief Sync the WiFi credentials by file system
@@ -94,134 +79,43 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
 }
 
 /**
- * @brief Initialize the web server.
- */
-auto InitWebServer() -> ErrorOr<>
-{
-    if (!serverInitialized)
-    {
-        INTERNAL_DEBUG() << "Initializing web server...";
-
-        IPAddress ip(192, 168, 1, 1);
-
-        WiFi.softAPConfig(ip, ip, IPAddress(255, 255, 255, 0));
-
-        WiFi.softAP("Configure o sensor Naturart");
-
-        // init web server
-        dnsServer.start(53, "*", ip);
-
-        INTERNAL_DEBUG() << "Starting web server...";
-        INTERNAL_DEBUG() << "IP address: " << ip.toString();
-
-        server.on("/sync", HTTP_GET,
-                  [](AsyncWebServerRequest *request)
-                  {
-                      INTERNAL_DEBUG() << "GET /sync";
-                      request->send(LittleFS, "/public/sensor.html", String(), false);
-                  });
-
-        server.on("/sync", HTTP_POST,
-                  [&](AsyncWebServerRequest *request)
-                  {
-                      INTERNAL_DEBUG() << "POST /sync";
-                      auto *username = request->getParam("username", true);
-                      auto *password = request->getParam("password", true);
-                      auto *cpf = request->getParam("cpf", true);
-                      auto *serialCode = request->getParam("serialCode", true);
-
-                      GuardArgumentCollection args = GuardArgumentCollection();
-
-                      args.add(IGuardArgument{.any = username, .name = "Username"});
-                      args.add(IGuardArgument{.any = password, .name = "Password"});
-                      args.add(IGuardArgument{.any = cpf, .name = "CPF"});
-                      args.add(IGuardArgument{.any = serialCode, .name = "Serial Core"});
-
-                      auto result = Guard::againstNullBulk(args);
-
-                      if (!result.succeeded)
-                      {
-                          INTERNAL_DEBUG() << "Guard failed: " << result.message;
-                          request->send(206, "text/plain", "Conteudos parciais");
-                          return;
-                      }
-
-                      userEntry = {
-                          .name = username->value(),
-                          .password = password->value(),
-                          .serialCode = serialCode->value(),
-                          .cpf = cpf->value(),
-                      };
-
-                      auto result1 = SaveUserEntry(userEntry);
-
-                      if (result1.ok())
-                      {
-                          request->send(200, "text/plain", "OK");
-                          ESP.restart();
-                      }
-                  });
-
-        serverInitialized = true;
-    }
-    return ok();
-}
-
-/**
  * @brief Sync the WiFi credentials by local host
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto SyncWiFiByWebHost() -> ErrorOr<>
+auto GetWiFiCredentilasFromUser() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing WiFi by local host...";
 
-    // Need initialization of server.
-    auto server = makeWebServerBase();
+    // prepare the WiFi instance to Access Point.
+    ConfigureWiFiToWebServer();
 
-    makeWebServerToWifiConfig(server);
+    DNSServer dnsServer;
+
+    // configure dns server.
+    ConfigureDNSServer(&dnsServer);
+
+    // Need initialization of server.
+    auto server = MakeWebServerBase();
+
+    // contruct the handlers of web server.
+    ConstructWebServerToWifiConfig(server);
 
     server.begin();
     TurnOnBuiltInLed();
 
     INTERNAL_DEBUG() << "Server started. Waiting for WiFi credentials...";
 
-    while (!syncWiFiByWebHostHelper)
+    while (true)
     {
         dnsServer.processNextRequest();
         delay(10);
     }
 
-    server.end();
-    TurnOffBuiltInLed();
-
-    syncWiFiByWebHostHelper = false;
-
-    INTERNAL_DEBUG() << "WiFi credentials received. Connecting to WiFi...";
-
-    auto result1 = WiFiConnect(wifiCredentials);
-
-    if (!result1.ok())
-    {
-        INTERNAL_DEBUG() << "Failed to connect to WiFi";
-
-        return failure({
-            .context = "SyncWiFiByWebHost",
-            .message = "Failed to connect to WiFi",
-        });
-    }
-
-    auto saveResult = SaveWiFiCredentials(wifiCredentials);
-
-    if (!saveResult.ok())
-    {
-        INTERNAL_DEBUG() << saveResult.error();
-        return failure({
-            .context = "SyncWiFiByWebHost",
-            .message = "Failed to save WiFi credentials",
-        });
-    }
-
+    /**
+     * The ESP8266 will be restarted by the web server and the wifi credentials is saved in the file system.
+     * Then the credentials will be read from the file system. So, this function will never return.
+     */
     return ok();
 }
 
@@ -244,7 +138,7 @@ auto SyncWiFi() -> ErrorOr<>
 
     INTERNAL_DEBUG() << result.error();
 
-    auto result2 = SyncWiFiByWebHost();
+    auto result2 = GetWiFiCredentilasFromUser();
 
     if (result2.ok())
     {
@@ -267,7 +161,6 @@ auto SyncWiFi() -> ErrorOr<>
  */
 auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentials>
 {
-
     INTERNAL_DEBUG() << "Syncing sensor credentials by naturart broker...";
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -318,7 +211,7 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     return ok<SensorCredentials>({});
 }
 
-auto SyncSensorFromNaturartServer() -> ErrorOr<SensorCredentials>
+auto GetSensorCredentialsFromUser() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor credentials from Naturart server...";
 
@@ -328,61 +221,36 @@ auto SyncSensorFromNaturartServer() -> ErrorOr<SensorCredentials>
         WiFi.disconnect();
     }
 
-    auto result = InitWebServer();
+    // prepare the WiFi instance to Access Point.
+    ConfigureWiFiToWebServer();
 
-    if (!result.ok())
-    {
-        INTERNAL_DEBUG() << result.error();
-        return failure({
-            .context = "SyncSensorCredentialsFromNaturartServer",
-            .message = "Failed to init the web server",
-        });
-    }
+    DNSServer dnsServer;
+
+    // configure dns server.
+    ConfigureDNSServer(&dnsServer);
+
+    // Need initialization of server.
+    auto server = MakeWebServerBase();
+
+    // contruct the handlers of web server.
+    ContructWebServerToUserCredentialsConfig(server);
 
     server.begin();
     TurnOnBuiltInLed();
 
-    // TODO: add a timeout.
-    // await for the user entry.
-    while (!syncSensorCredentialsHelper)
+    INTERNAL_DEBUG() << "Server started. Waiting for WiFi credentials...";
+
+    while (true)
     {
         dnsServer.processNextRequest();
         delay(10);
     }
 
-    server.end();
-    TurnOffBuiltInLed();
-
-    // to evit conflits.
-    syncSensorCredentialsHelper = false;
-
-    // needs validate the user entry.
-    auto result1 = SyncWiFiByFileSystem();
-
-    if (!result1.ok())
-    {
-        INTERNAL_DEBUG() << result1.error();
-        return failure({
-            .context = "SyncSensorCredentialsFromNaturartServer",
-            .message = "Failed to sync WiFi by file system",
-        });
-    }
-
-    // send the entry for web broker.
-    auto result2 = GetSensorCredentialsFromBroker(userEntry);
-
-    if (!result2.ok())
-    {
-        INTERNAL_DEBUG() << result2.error();
-        return failure({
-            .context = "GetSensorCredentialsFromNaturartServer",
-            .message = "Failed to get sensor credentials",
-        });
-    }
-
-    sensorCredentials = result2.unwrap();
-
-    return ok(sensorCredentials);
+    /**
+     * The ESP8266 will be restarted by the web server and the wifi credentials is saved in the file system.
+     * Then the credentials will be read from the file system. So, this function will never return.
+     */
+    return ok();
 }
 
 /**
@@ -392,7 +260,8 @@ auto SyncSensor() -> ErrorOr<>
 {
     if (IsEmptyFile(ENTRY_FILE))
     {
-        SyncSensorFromNaturartServer();
+        // This function will never return, because the ESP8266 will be restarted by the web server.
+        GetSensorCredentialsFromUser();
     }
 
     auto entryResult = GetUserEntry();
