@@ -4,6 +4,7 @@
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  */
 
+#include <config/system.h>
 
 #include <Arduino.h>
 #include <LittleFS.h>
@@ -19,6 +20,7 @@
 #include <wifi-credentials.h>
 #include <user-entry.h>
 
+#include <blink-led.h>
 
 /**
  * STATIC VARIABLES
@@ -92,22 +94,6 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
     }
 
     return ok();
-}
-
-/**
- * @brief Turn on the built-in LED
- */
-auto TurnOnBuiltInLed() -> void
-{
-    digitalWrite(LED_BUILTIN, HIGH);
-}
-
-/**
- * @brief Turn off the built-in LED
- */
-auto TurnOffBuiltInLed() -> void
-{
-    digitalWrite(LED_BUILTIN, LOW);
 }
 
 /**
