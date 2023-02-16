@@ -10,16 +10,13 @@
 #include <LittleFS.h>
 
 #include <DNSServer.h>
-#include "ESPAsyncWebServer.h"
 
 #include <PubSubClient.h>
-
-#include <Guard.h>
 
 #include <sensor-credentials.h>
 #include <wifi-credentials.h>
 #include <user-entry.h>
-
+#include <web-server-factory.h>
 #include <blink-led.h>
 
 /**
@@ -117,53 +114,6 @@ auto InitWebServer() -> ErrorOr<>
         INTERNAL_DEBUG() << "Starting web server...";
         INTERNAL_DEBUG() << "IP address: " << ip.toString();
 
-        server.on("/wifi", HTTP_GET,
-                  [](AsyncWebServerRequest *request)
-                  {
-                      INTERNAL_DEBUG() << "GET /wifi";
-                      request->send(LittleFS, "/public/wifi.html", String(), false);
-                  });
-
-        server.on("/wifi", HTTP_POST,
-                  [&](AsyncWebServerRequest *request)
-                  {
-                      INTERNAL_DEBUG() << "POST /wifi";
-                      auto *ssid = request->getParam("ssid", true);
-                      auto *password = request->getParam("password", true);
-
-                      GuardArgumentCollection args = GuardArgumentCollection();
-
-                      args.add(IGuardArgument{.any = ssid, .name = "SSID"});
-                      args.add(IGuardArgument{.any = password, .name = "Password"});
-
-                      auto result = Guard::againstNullBulk(args);
-
-                      if (!result.succeeded)
-                      {
-                          INTERNAL_DEBUG() << "Guard failed: " << result.message;
-                          request->send(LittleFS, "/public/wifi_error.html", String(), false);
-                          return;
-                      }
-
-                      wifiCredentials = {
-                          .ssid = ssid->value(),
-                          .password = password->value(),
-                      };
-
-                      auto saveResult = SaveWiFiCredentials(wifiCredentials);
-
-                      if (!saveResult.ok())
-                      {
-                          INTERNAL_DEBUG() << "Failed to save WiFi credentials: " << saveResult.error();
-                          request->send(LittleFS, "/public/wifi_error.html", String(), false);
-                          return;
-                      }
-
-                      // TODO: Send a response to the client
-                      request->send(200, "text/plain", "OK");
-                      ESP.restart();
-                  });
-
         server.on("/sync", HTTP_GET,
                   [](AsyncWebServerRequest *request)
                   {
@@ -227,16 +177,9 @@ auto SyncWiFiByWebHost() -> ErrorOr<>
     INTERNAL_DEBUG() << "Syncing WiFi by local host...";
 
     // Need initialization of server.
-    auto result = InitWebServer();
+    auto server = makeWebServerBase();
 
-    if (!result.ok())
-    {
-        INTERNAL_DEBUG() << result.error();
-        return failure({
-            .context = "SyncWiFiByWebHost",
-            .message = "Failed to init the web server",
-        });
-    }
+    makeWebServerToWifiConfig(server);
 
     server.begin();
     TurnOnBuiltInLed();
