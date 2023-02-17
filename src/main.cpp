@@ -10,18 +10,11 @@
 #include <config/web-server.h>
 
 #include <Arduino.h>
-#include <LittleFS.h>
-
-#include <DNSServer.h>
 
 #include <PubSubClient.h>
 
 #include <sensor-credentials.h>
-#include <wifi-credentials.h>
-#include <user-entry.h>
-#include <web-server-factory.h>
-#include <blink-led.h>
-#include <dns-server-factory.h>
+#include <sync-wifi.h>
 
 /**
  * STATIC VARIABLES
@@ -41,118 +34,6 @@ static UserEntry userEntry;
 
 // The sensor credentials
 static SensorCredentials sensorCredentials;
-
-/**
- * @brief Sync the WiFi credentials by file system
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto SyncWiFiByFileSystem() -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Syncing WiFi by file system...";
-
-    auto result = GetWiFiCredentials();
-
-    if (!result.ok())
-    {
-        INTERNAL_DEBUG() << "Failed to get WiFi credentials: " << result.error();
-
-        return failure({
-            .context = "SyncWiFiByFileSystem",
-            .message = "Failed to get WiFi credentials",
-        });
-    }
-
-    WiFiCredentials credentials = result.unwrap();
-
-    auto result2 = WiFiConnect(credentials);
-
-    if (!result2.ok())
-    {
-        return failure({
-            .context = "SyncWiFiByFileSystem",
-            .message = "Failed to connect to WiFi",
-        });
-    }
-
-    return ok();
-}
-
-/**
- * @brief Sync the WiFi credentials by local host
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto GetWiFiCredentilasFromUser() -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Syncing WiFi by local host...";
-
-    // prepare the WiFi instance to Access Point.
-    ConfigureWiFiToWebServer();
-
-    DNSServer dnsServer;
-
-    // configure dns server.
-    ConfigureDNSServer(&dnsServer);
-
-    // Need initialization of server.
-    auto server = MakeWebServerBase();
-
-    // contruct the handlers of web server.
-    ConstructWebServerToWifiConfig(server);
-
-    server.begin();
-    TurnOnBuiltInLed();
-
-    INTERNAL_DEBUG() << "Server started. Waiting for WiFi credentials...";
-
-    while (true)
-    {
-        dnsServer.processNextRequest();
-        delay(10);
-    }
-
-    /**
-     * The ESP8266 will be restarted by the web server and the wifi credentials is saved in the file system.
-     * Then the credentials will be read from the file system. So, this function will never return.
-     */
-    return ok();
-}
-
-/**
- * @brief Sync the WiFi credentials
- *
- * @return ErrorOr<> can be ok() or failure()
- */
-auto SyncWiFi() -> ErrorOr<>
-{
-    INTERNAL_DEBUG() << "Syncing WiFi...";
-
-    auto result = SyncWiFiByFileSystem();
-
-    if (result.ok())
-    {
-        INTERNAL_DEBUG() << "Synced by file system";
-        return ok();
-    }
-
-    INTERNAL_DEBUG() << result.error();
-
-    auto result2 = GetWiFiCredentilasFromUser();
-
-    if (result2.ok())
-    {
-        INTERNAL_DEBUG() << "Synced by local host";
-        return ok();
-    }
-
-    INTERNAL_DEBUG() << result.error();
-
-    return failure({
-        .context = "SyncWiFi",
-        .message = "Failed to sync WiFi",
-    });
-}
 
 /**
  * @brief Sync the sensor credentials by local host.
