@@ -1,29 +1,35 @@
 /**
- * @file sync-wifi-by-web-host.h
- * @brief Syncs the WiFi credentials by web host.
+ * @file get-sensor-credentials-from-user.h
+ * @brief Gets the sensor credentials from the user.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
  * @date 2021-07-10
  *
  */
 
-#ifndef _SyncWiFiByWebHost_h
-#define _SyncWiFiByWebHost_h
+#ifndef _GetSensorCredentialsFromUser_h
+#define _GetSensorCredentialsFromUser_h
 
 #include <wifi-connection.h>
-#include <wifi-credentials.h>
-#include <dns-server-factory.h>
+#include <sensor-credentials.h>
 #include <web-server-factory.h>
+#include <dns-server-factory.h>
 #include <blink-led.h>
 
 /**
- * @brief Sync the WiFi credentials by local host
+ * @brief Sync the sensor credentials
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetWiFiCredentilasFromUser() -> ErrorOr<>
+auto GetSensorCredentialsFromUser() -> ErrorOr<>
 {
-    INTERNAL_DEBUG() << "Syncing WiFi by local host...";
+    INTERNAL_DEBUG() << "Syncing sensor credentials from Naturart server...";
+
+    // Requires WiFi to be disconnected to avoid conflicts with the web server.
+    if (WiFi.isConnected())
+    {
+        WiFi.disconnect();
+    }
 
     // prepare the WiFi instance to Access Point.
     ConfigureWiFiToWebServer();
@@ -37,7 +43,7 @@ auto GetWiFiCredentilasFromUser() -> ErrorOr<>
     auto server = MakeWebServerBase();
 
     // contruct the handlers of web server.
-    ConstructWebServerToWifiConfig(server);
+    ContructWebServerToUserCredentialsConfig(server);
 
     server.begin();
     TurnOnBuiltInLed();
@@ -57,4 +63,4 @@ auto GetWiFiCredentilasFromUser() -> ErrorOr<>
     return ok();
 }
 
-#endif // ! _SyncWiFiByWebHost_h
+#endif // ! _GetSensorCredentialsFromUser_h
