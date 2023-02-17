@@ -4,7 +4,7 @@
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
  * @date 2021-07-10
- * 
+ *
  */
 
 #ifndef _SyncWiFiByFileSystem_h
@@ -35,16 +35,21 @@ auto SyncWiFiByFileSystem() -> ErrorOr<>
         });
     }
 
-    WiFiCredentials credentials = result.unwrap();
-
-    auto result2 = WiFiConnect(credentials);
-
-    if (!result2.ok())
+    // When this file is empty, ESP does not connect to any wifi,
+    // as it will restart when capturing data through the host
+    if (!IsEmptyFile(ENTRY_FILE))
     {
-        return failure({
-            .context = "SyncWiFiByFileSystem",
-            .message = "Failed to connect to WiFi",
-        });
+        WiFiCredentials credentials = result.unwrap();
+
+        auto result2 = WiFiConnect(credentials);
+
+        if (!result2.ok())
+        {
+            return failure({
+                .context = "SyncWiFiByFileSystem",
+                .message = "Failed to connect to WiFi",
+            });
+        }
     }
 
     return ok();
