@@ -2,6 +2,9 @@ const onsub = async (event) => {
   event.preventDefault();
   let result = false;
 
+  document.querySelector(".submit-input").innerHTML = "Enviar";
+  document.querySelector("p[name='fetch-message']").innerHTML = "";
+
   if (!validate("ssid")) {
     result = true;
   }
@@ -30,12 +33,6 @@ const onsub = async (event) => {
     },
     body: `ssid=${ssid}&password=${password}`,
   })
-    .then((res) => {
-      if (res.status === 200) {
-        httpSuccess();
-      } else if (res.status === 400) {
-        httpError(400);
-      }
-    })
+    .then(adaptHttpFetchHandling())
     .catch((error) => console.error("Error: " + error));
 };

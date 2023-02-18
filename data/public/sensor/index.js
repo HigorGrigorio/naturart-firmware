@@ -43,14 +43,6 @@ const onsub = async (event) => {
     },
     body: `username=${username}&password=${password}&cpf=${cpf}&serialCode=${serialcode}`,
   })
-    .then((res) => {
-      if (res.status === 200) {
-        httpSuccess();
-      } else if (res.status === 400) {
-        httpError(400);
-      } else if (res.status === 422) {
-        httpError(422);
-      }
-    })
+    .then(adaptHttpFetchHandling())
     .catch((error) => console.error("Error: " + error));
 };
