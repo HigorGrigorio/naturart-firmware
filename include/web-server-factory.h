@@ -59,22 +59,45 @@ auto ConfigureWiFiToWebServer(IPAddress localIP = WEB_SERVER_LOCAL_IP,
 
 auto MakeWebServerBase() -> AsyncWebServer
 {
-    return AsyncWebServer(80);
+    auto server = AsyncWebServer(80);
+
+    server.on("/shared/style.css", HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                  INTERNAL_DEBUG() << "GET /style.css";
+                  request->send(LittleFS, "/public/shared/style.css", "text/css", false);
+              });
+
+    server.on("/shared/index.js", HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                  INTERNAL_DEBUG() << "GET /index.js";
+                  request->send(LittleFS, "/public/shared/index.js", "text/script", false);
+              });
+
+    return server;
 }
 
 auto ConstructWebServerToWifiConfig(AsyncWebServer &server) -> void
 {
-    server.on("/wifi", HTTP_GET,
+    server.on("/", HTTP_GET,
               [](AsyncWebServerRequest *request)
               {
-                  INTERNAL_DEBUG() << "GET /wifi";
-                  request->send(LittleFS, "/public/wifi.html", String(), false);
+                  INTERNAL_DEBUG() << "GET /";
+                  request->send(LittleFS, "/public/wifi/index.html", "text/html", false);
               });
 
-    server.on("/wifi", HTTP_POST,
+    server.on("/index.js", HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                  INTERNAL_DEBUG() << "GET /index.js";
+                  request->send(LittleFS, "/public/wifi/index.js", "test/script", false);
+              });
+
+    server.on("/", HTTP_POST,
               [&](AsyncWebServerRequest *request)
               {
-                  INTERNAL_DEBUG() << "POST /wifi";
+                  INTERNAL_DEBUG() << "POST /";
                   auto *ssid = request->getParam("ssid", true);
                   auto *password = request->getParam("password", true);
 
@@ -88,7 +111,7 @@ auto ConstructWebServerToWifiConfig(AsyncWebServer &server) -> void
                   if (!result.succeeded)
                   {
                       INTERNAL_DEBUG() << "Guard failed: " << result.message;
-                      request->send(LittleFS, "/public/wifi_error.html", String(), false);
+                      request->send(400);
                       return;
                   }
 
@@ -102,12 +125,11 @@ auto ConstructWebServerToWifiConfig(AsyncWebServer &server) -> void
                   if (!saveResult.ok())
                   {
                       INTERNAL_DEBUG() << "Failed to save WiFi credentials: " << saveResult.error();
-                      request->send(LittleFS, "/public/wifi_error.html", String(), false);
+                      request->send(422);
                       return;
                   }
 
-                  // TODO: Send a response to the client
-                  request->send(200, "text/plain", "OK");
+                  request->send(200);
                   ESP.restart();
               });
 }
@@ -154,7 +176,7 @@ auto ContructWebServerToUserCredentialsConfig(AsyncWebServer &server) -> void
                   };
 
                   auto result1 = SaveUserEntry(userEntry);
-                  
+
                   // TODO: Send a response to the client
                   if (result1.ok())
                   {

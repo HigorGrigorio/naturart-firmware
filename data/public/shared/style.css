@@ -1,0 +1,166 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: #f5f5f5;
+  font-family: sans-serif;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.form-container {
+  width: 500px;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.input-group .empty-label {
+  position: absolute;
+  left: 0;
+  padding: 10px;
+  margin-left: 20px;
+  color: #333;
+  font-size: 14px;
+  transition: 0.3s;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.input-group input:focus {
+  outline: none;
+  border-color: #333;
+}
+
+.not-empty-label {
+  font-size: 12px;
+  background-color: #fff;
+  padding: 0 5px;
+  border-radius: 1px;
+  color: #000;
+  position: absolute;
+  left: 30px;
+  transform: translateY(-7px);
+  transition: 0.3s;
+}
+
+.submit-input {
+  margin-top: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  background-color: #333;
+  color: #fff;
+  cursor: pointer;
+  transition: 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.submit-input:hover {
+  background-color: #444;
+  transform: scale(1.01);
+}
+
+h2[name="naturart"] {
+  margin-bottom: 20px;
+}
+
+h2[name="naturart"] > span {
+  font-size: 50px;
+  font-weight: 100;
+  color: #333;
+  margin: px 0;
+}
+
+h2[name="naturart"] > span:hover {
+  color: #444;
+  border-bottom: #333 1px solid;
+}
+
+@media screen and (max-width: 600px) {
+  .form-container {
+    width: 100%;
+    height: 100vh;
+    box-shadow: none;
+    justify-content: center;
+  }
+
+  h2[name="naturart"] {
+    position: fixed;
+    top: 0;
+    z-index: 10;
+    padding-top: 50px;
+  }
+
+  h2[name="naturart"] > span {
+    font-size: 50px;
+  }
+
+  .text {
+    padding: 10px;
+    padding-bottom: 40px;
+    font-size: 24px;
+  }
+}
+
+.form-control-empty {
+  border: 1px solid #dd3d3d !important;
+}
+
+.text {
+  margin-bottom: 20px;
+  text-align: justify;
+  font-size: 18px;
+}
+
+.text-error {
+  min-height: 30px;
+  padding-left: 10px;
+  padding-top: 5px;
+  color: #dd3d3d;
+}
+
+.lds-dual-ring {
+  display: inline-block;
+}
+
+.lds-dual-ring:after {
+  content: " ";
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  border-color: #fff transparent #fff transparent;
+  animation: lds-dual-ring 1.2s linear infinite;
+  position: relative;
+}
+
+@keyframes lds-dual-ring {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+
+  <link rel="stylesheet" href="../shared/style.css" type="text/css" />
+  <script src="../shared/index.js"></script>
+  <script src="./index.js"></script>
+  <body>
+    <h2 name="naturart">
+      <span>N</span>
+      <span>a</span>
+      <span>t</span>
+      <span>u</span>
+      <span>r</span>
+      <span>a</span>
+      <span>r</span>
+      <span>t</span>
+    </h2>
+    <form method="post" class="form-container">
+      <p class="text">
+        Olá, Obrigado por escolher a Naturart. Para configurar sua rede wifi,
+        basta preencher os campos abaixo.
+      </p>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="ssid"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="ssid" class="empty-label">Nome da rede</label>
+      </div>
+      <p name="ssid-error" class="text-error"></p>
+      <div class="input-group">
+        <input
+          type="password"
+          class="form-control"
+          name="password"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="password" class="empty-label">Senha</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="password-error" class="text-error"></p>
+      <span class="submit-input" onclick="onsub(event)">Enviar</span>
+    </form>
+  </body>
+</html>
