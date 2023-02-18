@@ -11,7 +11,7 @@
 #define _SyncSensorCredentials_h
 
 #include <get-sensor-credentials-from-broker.h>
-#include <get-sensor-credentials-from-user.h>
+#include <get-user-entry.h>
 
 /**
  * @brief Sync the sensor credentials
@@ -23,7 +23,7 @@ auto SyncSensor() -> ErrorOr<>
     if (IsEmptyFile(ENTRY_FILE))
     {
         // This function will never return, because the ESP8266 will be restarted by the web server.
-        GetSensorCredentialsFromUser();
+        GetUserEntryFromUser();
     }
 
     auto entryResult = GetUserEntry();

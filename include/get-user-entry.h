@@ -21,7 +21,7 @@
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetSensorCredentialsFromUser() -> ErrorOr<>
+auto GetUserEntryFromUser() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor credentials from Naturart server...";
 
