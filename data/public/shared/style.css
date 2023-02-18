@@ -164,3 +164,61 @@ h2[name="naturart"] > span:hover {
     transform: rotate(360deg);
   }
 }
+
+.check-icon {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #fff;
+  border-radius: 15px;
+  position: relative;
+  background-color: #fff;
+}
+
+.check-icon::before {
+  content: "";
+  width: 10px;
+  height: 15px;
+  border-left: 2px solid #333;
+  border-bottom: 2px solid #333;
+  transform: rotate(45deg) rotateY(180deg);
+  position: absolute;
+  top: 2px;
+  left: 7px;
+}
+
+.x-icon {
+  width: 30px;
+  height: 30px;
+  border: 2px solid #333;
+  border-radius: 15px;
+  position: relative;
+  background-color: #fff;
+}
+
+.x-icon::before,
+.x-icon::after {
+  content: "";
+  width: 20px;
+  height: 15px;
+  border-left: 2px solid #333;
+  position: absolute;
+}
+
+.x-icon::before {
+  transform: rotate(45deg);
+  top: 12px;
+  left: 10px;
+}
+
+.x-icon::after {
+  transform: rotate(-45deg);
+  top: -1px;
+  left: 10px;
+}
+
+.message {
+  min-height: 30px;
+  padding-left: 10px;
+  padding-top: 15px;
+  color: #333;
+}

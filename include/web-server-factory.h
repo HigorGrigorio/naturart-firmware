@@ -91,7 +91,7 @@ auto ConstructWebServerToWifiConfig(AsyncWebServer &server) -> void
               [](AsyncWebServerRequest *request)
               {
                   INTERNAL_DEBUG() << "GET /index.js";
-                  request->send(LittleFS, "/public/wifi/index.js", "test/script", false);
+                  request->send(LittleFS, "/public/wifi/index.js", "text/script", false);
               });
 
     server.on("/", HTTP_POST,
@@ -136,17 +136,24 @@ auto ConstructWebServerToWifiConfig(AsyncWebServer &server) -> void
 
 auto ContructWebServerToUserCredentialsConfig(AsyncWebServer &server) -> void
 {
-    server.on("/sync", HTTP_GET,
+    server.on("/", HTTP_GET,
               [](AsyncWebServerRequest *request)
               {
                   INTERNAL_DEBUG() << "GET /sync";
-                  request->send(LittleFS, "/public/sensor.html", String(), false);
+                  request->send(LittleFS, "/public/sensor/index.html", String(), false);
               });
 
-    server.on("/sync", HTTP_POST,
+    server.on("/index.js", HTTP_GET,
+              [](AsyncWebServerRequest *request)
+              {
+                  INTERNAL_DEBUG() << "GET /index.js";
+                  request->send(LittleFS, "/public/sensor/index.js", "text/script", false);
+              });
+
+    server.on("/", HTTP_POST,
               [&](AsyncWebServerRequest *request)
               {
-                  INTERNAL_DEBUG() << "POST /sync";
+                  INTERNAL_DEBUG() << "POST /";
                   auto *username = request->getParam("username", true);
                   auto *password = request->getParam("password", true);
                   auto *cpf = request->getParam("cpf", true);
@@ -164,7 +171,7 @@ auto ContructWebServerToUserCredentialsConfig(AsyncWebServer &server) -> void
                   if (!result.succeeded)
                   {
                       INTERNAL_DEBUG() << "Guard failed: " << result.message;
-                      request->send(206, "text/plain", "Conteudos parciais");
+                      request->send(400);
                       return;
                   }
 
@@ -177,12 +184,15 @@ auto ContructWebServerToUserCredentialsConfig(AsyncWebServer &server) -> void
 
                   auto result1 = SaveUserEntry(userEntry);
 
-                  // TODO: Send a response to the client
-                  if (result1.ok())
+                  if (!result1.ok())
                   {
-                      request->send(200, "text/plain", "OK");
-                      ESP.restart();
+                      INTERNAL_DEBUG() << "Failed to save user entry: " << result1.error();
+                      request->send(422);
+                      return;
                   }
+
+                  request->send(200);
+                  ESP.restart();
               });
 }
 

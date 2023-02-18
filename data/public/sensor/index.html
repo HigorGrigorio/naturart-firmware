@@ -6,10 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
   </head>
-
+  
   <link rel="stylesheet" href="../shared/style.css" type="text/css" />
   <script src="../shared/index.js"></script>
   <script src="./index.js"></script>
+
   <body>
     <h2 name="naturart">
       <span>N</span>
@@ -23,20 +24,21 @@
     </h2>
     <form method="post" class="form-container">
       <p class="text">
-        Olá, Obrigado por escolher a Naturart. Para configurar sua rede wifi,
-        basta preencher os campos abaixo.
+        Olá, Obrigado por escolher a Naturart. Para sincronizar o seu produto,
+        basta prencha os campos abaixo.
       </p>
       <div class="input-group">
         <input
           type="text"
           class="form-control"
-          name="ssid"
+          name="username"
+          onkeyup="keyup(this)"
           onfocus="focusin(event)"
           onfocusout="focusout(event)"
         />
-        <label for="ssid" class="empty-label">Nome da rede</label>
+        <label for="username" class="empty-label">Nome de usuário</label>
       </div>
-      <p name="ssid-error" class="text-error"></p>
+      <p name="username-error" class="text-error"></p>
       <div class="input-group">
         <input
           type="password"
@@ -49,7 +51,33 @@
         <span class="fa-eye"></span>
       </div>
       <p name="password-error" class="text-error"></p>
-      <span class="submit-input" onclick="onsub(event)">Enviar</span>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="cpf"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="cpf" class="empty-label">CPF</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="cpf-error" class="text-error"></p>
+      <div class="input-group">
+        <input
+          type="text"
+          class="form-control"
+          name="serialcode"
+          onfocus="focusin(event)"
+          onfocusout="focusout(event)"
+        />
+        <label for="serialcode" class="empty-label">Código serial</label>
+        <span class="fa-eye"></span>
+      </div>
+      <p name="serialcode-error" class="text-error"></p>
+      <span class="submit-input" onclick="onsub(event)"
+        >Submit</span
+      ></span>
       <p name="fetch-message" class="message"></p>
     </form>
   </body>

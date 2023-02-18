@@ -11,6 +11,8 @@ const onsub = async (event) => {
   }
 
   if (result) {
+    // dont't receive a response, but show error message.
+    httpError(400);
     return;
   }
 
@@ -21,7 +23,7 @@ const onsub = async (event) => {
   const ssid = document.querySelector('input[name="ssid"]').value;
   const password = document.querySelector('input[name="password"]').value;
 
-  fetch("/wifi", {
+  fetch("/", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",

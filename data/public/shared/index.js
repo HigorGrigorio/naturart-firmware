@@ -54,8 +54,8 @@ const httpSuccess = () => {
 
 const httpError = (arg) => { 
     if(arg === 400) {
-        setHttpMessage('Preencha todos os campos');
+        setHttpMessage('Preencha todos os campos', true);
     } else if(arg === 422) {
-        setHttpMessage('Obtivemos problemas ao processar os dados, tente novamente mais tarde.');
+        setHttpMessage('Obtivemos problemas ao processar os dados, tente novamente mais tarde.', true);
     }
 }
