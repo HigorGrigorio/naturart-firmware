@@ -23,7 +23,7 @@ auto SyncSensor() -> ErrorOr<>
     if (IsEmptyFile(ENTRY_FILE))
     {
         // This function will never return, because the ESP8266 will be restarted by the web server.
-        GetUserEntryFromUser();
+        GetUserEntry();
     }
 
     auto entryResult = GetUserEntry();
