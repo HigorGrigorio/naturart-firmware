@@ -5,8 +5,8 @@
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
  * @date 2021-07-10
- * 
-*/
+ *
+ */
 
 #ifndef _GetSensorCredentialsFromBroker_h
 #define _GetSensorCredentialsFromBroker_h
@@ -16,6 +16,7 @@
 #include <sensor-credentials.h>
 #include <user-entry.h>
 #include <wifi-connection.h>
+#include <uuid-factory.h>
 
 /**
  * @brief Sync the sensor credentials by local host.
@@ -39,20 +40,19 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     const char *host = "broker.hivemq.com";
     bool receive = true;
 
-    // TODO: get the real uuid.
-    entry.id = "123456789";
+    entry.id = makeUUID();
 
     // TODO: impl a real feature. This is just a test.
     //   The real feature just need to send the user entry to server and subscribe to the topic with the id
     // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
     // the device will save the result to the file system.
-    
+
     // The WiFi client
     WiFiClient wifiClient;
 
     // The MQTT client
     PubSubClient mqttClient(wifiClient);
-    
+
     mqttClient.setServer(host, 1883);
 
     INTERNAL_DEBUG() << "Connecting to MQTT broker...";
@@ -82,6 +82,5 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     INTERNAL_DEBUG() << "Received";
     return ok<SensorCredentials>({});
 }
-
 
 #endif // ! _GetSensorCredentialsFromBroker_h
