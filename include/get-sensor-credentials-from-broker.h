@@ -46,7 +46,7 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     //   The real feature just need to send the user entry to server and subscribe to the topic with the id
     // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
     // the device will save the result to the file system.
-
+    
     // The WiFi client
     WiFiClient wifiClient;
 
@@ -65,6 +65,9 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
 
     INTERNAL_DEBUG() << "Connected to MQTT broker";
 
+    // TODO: get the real topic.
+    // The real payload is the user entry in json format.
+    // When receiving the result, the device will save the result to the file system, then the ESP must be reseted.
     mqttClient.subscribe("sync");
     mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
                            { INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; receive = true; });
