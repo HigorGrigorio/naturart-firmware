@@ -26,7 +26,7 @@ namespace utility
 
             while (end != -1)
             {
-                auto val = toSplit.substring(start, end - start);
+                auto val = toSplit.substring(start, end - start + 1);
                 array.add(val);
                 Serial.print(val);
                 start = end + delimiter.length();
