@@ -38,7 +38,6 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
 
     // using a fake broker to monitorize the connection.
     const char *host = "broker.hivemq.com";
-    bool receive = true;
 
     entry.id = makeUUID();
 
