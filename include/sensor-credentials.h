@@ -29,7 +29,37 @@ struct SensorType
  */
 using SensorCredentials = LL<struct SensorType>;
 
-auto CreadentialsFromJson(String json) -> ErrorOr<SensorCredentials>
+auto ToString(SensorType &sensorType) -> String
+{
+    return "{\"type\":\"" + sensorType.type + ",\"id\":\"" + sensorType.id + "\"}";
+}
+
+auto CredentialsToJson(SensorCredentials &credentials) -> String
+{
+    String buff = "[";
+
+    for (auto it = credentials.begin(), end = credentials.end(); it != end;)
+    {
+        auto value = *it;
+
+        auto parsedValue = ToString(value);
+
+        buff += parsedValue;
+
+        ++it;
+
+        if (it != end)
+        {
+            buff += ', ';
+        }
+    }
+
+    buff += ']';
+
+    return buff;
+}
+
+auto CreadentialsFromBrokerPayload(String json) -> ErrorOr<SensorCredentials>
 {
     ErrorOr<SensorCredentials> result;
 
@@ -94,6 +124,47 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
     else
     {
         // TODO: read the file
+    }
+
+    return result;
+}
+
+auto SaveSensorCredentials(SensorCredentials credentials) -> ErrorOr<>
+{
+    ErrorOr<> result = ok();
+
+    INTERNAL_DEBUG()
+        << "Saving sensor credentials";
+
+    if (!FileExists(SELF_FILE))
+    {
+        CreateFile(SELF_FILE);
+    }
+
+    auto openResult = OpenFile(SELF_FILE, "w");
+
+    if (!openResult.ok())
+    {
+        INTERNAL_DEBUG() << "Failed to open file for writing";
+        result = failure(openResult.error());
+    }
+    else
+    {
+        File file = openResult.unwrap();
+
+        if (file)
+        {
+            if (!file.println(CredentialsToJson(credentials)))
+            {
+                result = failure({.context = "SaveSensorCredentials", .message = "Writing the file resulted in an error"});
+            }
+        }
+        else
+        {
+            result = failure({.context = "SaveSensorCredentials", .message = "Opening the file resulted in an error"});
+        }
+
+        file.close();
     }
 
     return result;

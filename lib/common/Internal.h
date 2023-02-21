@@ -141,9 +141,6 @@ namespace internal
 // macros. It evaluates to a temporary `ExitingStream` object that can be
 // manipulated, streamed into, and then will exit the program.
 
-//TODO: implement a macro control the flow of the program. (exit or not)
-//TODO: implement a macro to enable or disable debug output
-
 #define check_internal_stream() \
     internal::ExitingStream::Helper() | internal::ExitingStream()
 

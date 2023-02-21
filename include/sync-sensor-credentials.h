@@ -20,37 +20,42 @@
  */
 auto SyncSensor() -> ErrorOr<>
 {
-    if (IsEmptyFile(ENTRY_FILE))
+    ErrorOr<> result = ok();
+
+    if (IsEmptyFile(SELF_FILE))
     {
-        // This function will never return, because the ESP8266 will be restarted by the web server.
-        GetUserEntryFromWebServer();
+        if (IsEmptyFile(ENTRY_FILE))
+        {
+            // This function will never return, because the ESP8266 will be restarted by the web server.
+            GetUserEntryFromWebServer();
+        }
+
+        auto entryResult = GetUserEntry();
+
+        if (!entryResult.ok())
+        {
+            INTERNAL_DEBUG() << entryResult.error();
+            result = failure({
+                .context = "SyncSensor",
+                .message = "Failed to get user entry",
+            });
+        }
+
+        UserEntry userEntry = entryResult.unwrap();
+
+        auto credentilsResult = GetSensorCredentialsFromBroker(userEntry);
+
+        if (!credentilsResult.ok())
+        {
+            INTERNAL_DEBUG() << credentilsResult.error();
+            result = failure({
+                .context = "SyncSensor",
+                .message = "Failed to get sensor credentials",
+            });
+        }
     }
 
-    auto entryResult = GetUserEntry();
-
-    if (!entryResult.ok())
-    {
-        INTERNAL_DEBUG() << entryResult.error();
-        return failure({
-            .context = "SyncSensor",
-            .message = "Failed to get user entry",
-        });
-    }
-
-    UserEntry userEntry = entryResult.unwrap();
-
-    auto result = GetSensorCredentialsFromBroker(userEntry);
-
-    if (!result.ok())
-    {
-        INTERNAL_DEBUG() << result.error();
-        return failure({
-            .context = "SyncSensor",
-            .message = "Failed to get sensor credentials",
-        });
-    }
-
-    return ok();
+    return result;
 }
 
 #endif // ! _SyncSensorCredentials_h

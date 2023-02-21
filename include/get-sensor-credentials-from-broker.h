@@ -23,7 +23,7 @@
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentials>
+auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor credentials by naturart broker...";
     if (WiFi.status() != WL_CONNECTED)
@@ -41,11 +41,6 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
     bool receive = true;
 
     entry.id = makeUUID();
-
-    // TODO: impl a real feature. This is just a test.
-    //   The real feature just need to send the user entry to server and subscribe to the topic with the id
-    // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
-    // the device will save the result to the file system.
 
     // The WiFi client
     WiFiClient wifiClient;
@@ -65,87 +60,56 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<SensorCredentia
 
     INTERNAL_DEBUG() << "Connected to MQTT broker";
 
-    // TODO: impl a real feature. This is just a test.
-    //   The real feature just need to send the user entry to server and subscribe to the topic with the id
-    // of the user entry. Then the server will send the result of entry in the topic. On receiving the result,
-    // the device will save the result to the file system.
-    
-    mqttClient.subscribe(entry.id.c_str());
-    mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void { 
-                                INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; 
-                                received = true;
-                                String message = "";
-                                for (int i = 0; i < length; i++)
-                                {
-                                    message += (char)payload[i];
-                                }
-                            });
-
-    while (!received)
-    {
-        delay(10);
-    }
-    INTERNAL_DEBUG() << "Received result entry from server";
-    // Transform JSON to string to save in file system
-    auto SaveSensorCredentials(SensorCredentials msg) -> ErrorOr<>
-    {
-        INTERNAL_DEBUG() << "Saving sensor credentials";
-
-        if(!FileExists(SELF_FILE)){
-            CreateFile(ENTRY_FILE);
-        }
-
-        auto openResult = file = SPIFFS.open(ENTRY_FILE, "w")
-
-        if (!openResult.ok())
-        {
-            INTERNAL_DEBUG() << "Failed to open file for writing";
-            return failure(openResult.error());
-        }
-        
-        File file = openResult.unwrap();
-        auto transformResultList = CreadentialsFromJson (msg);
-
-        if (!transformResultList.ok()){
-                INTERNAL_DEBUG() << "Failed to transform credentials from json";
-                return failure(transformResultList.error());
-        }
-
-        auto credentials = transformResultList.unwrap();
-
-        for (auto credential : credentials)
-        {
-            file.println(credential);
-        }
-
-        file.close();
-    }
-
-    if(!SaveSensorCredentials())
-    {
-        INTERNAL_DEBUG() << "Failed to save sensor credentials";
-        return failure({
-            .context = "TryGetSensorCredentials",
-            .message = "Failed to save sensor credentials",
-        });
-    }
     INTERNAL_DEBUG() << "Saved sensor credentials";
-    // TODO: get the real topic.
-    // The real payload is the user entry in json format.
-    // When receiving the result, the device will save the result to the file system, then the ESP must be reseted.
-    mqttClient.subscribe("sync");
-    mqttClient.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
-                           { INTERNAL_DEBUG() << "Message arrived [" << topic << "] " << (char *)payload; receive = true; });
+
+    mqttClient.setCallback(
+        [&](char *topic, byte *payload, unsigned int length) -> void
+        {
+            INTERNAL_DEBUG() << "Message arrived [" << topic << "]: " << (char *)payload;
+
+            auto parseResult = CreadentialsFromBrokerPayload((char *)payload);
+
+            if (!parseResult.ok())
+            {
+                INTERNAL_DEBUG() << "Could not extract credentials from json";
+                INTERNAL_DEBUG() << parseResult.error();
+                // forces esp to collect the data again from the user
+                CleanFile(ENTRY_FILE);
+            }
+            else
+            {
+                auto credentials = parseResult.unwrap();
+
+                if (credentials.length() == 0)
+                {
+                    INTERNAL_DEBUG() << "Invalid credentials number";
+
+                    // forces esp to collect the data again from the user
+                    CleanFile(ENTRY_FILE);
+                }
+                else
+                {
+                    auto saveResult = SaveSensorCredentials(credentials);
+
+                    if (!saveResult.ok())
+                    {
+                        INTERNAL_DEBUG() << saveResult.error();
+                    }
+                }
+            }
+
+            ESP.restart();
+        });
 
     mqttClient.publish("sync", entry.ToJson().c_str());
 
-    while (!receive)
+    // Await the payload of broker to restart.
+    while (true)
     {
         delay(10);
     }
 
-    INTERNAL_DEBUG() << "Received";
-    return ok<SensorCredentials>({});
+    return ok();
 }
 
 #endif // ! _GetSensorCredentialsFromBroker_h
