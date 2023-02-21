@@ -26,9 +26,12 @@
 auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor credentials by naturart broker...";
+
     if (WiFi.status() != WL_CONNECTED)
     {
         INTERNAL_DEBUG() << "WiFi is not connected";
+
+        CleanFile(SESSION_FILE);
         ESP.restart();
         return failure({
             .context = "TryGetSensorCredentials",
@@ -41,30 +44,41 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
 
     entry.id = makeUUID();
 
-    // The WiFi client
-    WiFiClient wifiClient;
+    WiFiClient espClient;
 
-    // The MQTT client
-    PubSubClient mqttClient(wifiClient);
+    PubSubClient client(espClient);
 
-    mqttClient.setServer(host, 1883);
+    client.setServer(host, 1883);
 
     INTERNAL_DEBUG() << "Connecting to MQTT broker...";
 
-    while (!mqttClient.connected())
+    auto reconnect = [&client]() -> void
     {
-        mqttClient.connect("", "", "");
-        delay(500);
-    }
-
-    INTERNAL_DEBUG() << "Connected to MQTT broker";
-
-    INTERNAL_DEBUG() << "Saved sensor credentials";
-
-    mqttClient.setCallback(
-        [&](char *topic, byte *payload, unsigned int length) -> void
+        while (!client.connected())
         {
+
+            // Create a random client ID
+            String clientId = "ESP8266Client-";
+            clientId += String(random(0xffff), HEX);
+
+            // Attempt to connect
+            if (client.connect(clientId.c_str()))
+            {
+                INTERNAL_DEBUG() << "Connected to MQTT broker";
+            }
+        }
+    };
+
+    reconnect();
+
+    client.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
+                       {
             INTERNAL_DEBUG() << "Message arrived [" << topic << "]: " << (char *)payload;
+
+            if(entry.id != topic) {
+                INTERNAL_DEBUG() << "Invalid topic. Ignoring...";
+                return; 
+            }
 
             auto parseResult = CreadentialsFromBrokerPayload((char *)payload);
 
@@ -94,20 +108,34 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
                     {
                         INTERNAL_DEBUG() << saveResult.error();
                     }
+                    else
+                    {
+                        INTERNAL_DEBUG() << "Saved sensor credentials";
+                    }
                 }
             }
 
-            ESP.restart();
-        });
+            ESP.restart(); });
 
-    mqttClient.publish("sync", entry.ToJson().c_str());
+    client.subscribe(entry.id.c_str());
+
+    INTERNAL_DEBUG() << "Subcribed on topic '" << entry.id.c_str() << "'";
+
+    client.publish("sync", entry.ToJson().c_str());
 
     // Await the payload of broker to restart.
     while (true)
     {
+        if (!client.connected())
+        {
+            reconnect();
+        }
+
+        client.loop();
         delay(10);
     }
 
+    // Never return.
     return ok();
 }
 
