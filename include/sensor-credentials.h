@@ -50,7 +50,7 @@ auto CredentialsToJson(SensorCredentials &credentials) -> String
 
         if (it != end)
         {
-            buff += ', ';
+            buff += ", ";
         }
     }
 
