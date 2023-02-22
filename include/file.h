@@ -143,6 +143,8 @@ auto CleanFile(String path) -> ErrorOr<>
 
     File file = LittleFS.open(path, "w");
 
+    INTERNAL_DEBUG() << "Cleaning file '" << path << "'...";
+
     if (!file)
     {
         return failure({
