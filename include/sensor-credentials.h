@@ -143,14 +143,39 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
                 String id;
                 SensorCredentials credentials;
 
-                while (file.available())
+                auto readResult = ReadFromFile(SELF_FILE, '\n');
+
+                if (!readResult.ok())
                 {
-                    type = file.readStringUntil("\r\n");
-                    id = file.readStringUntil("\r\n");
+                    result = failure(readResult.error());
+                }
+                else
+                {
+                    auto array = readResult.unwrap();
 
-                    INTERNAL_DEBUG() << "Reading credential: '" << type << "' - '" << id << "'.";
+                    int i = 0;
 
-                    credentials.add({.type = type, .id = id});
+                    for (; i < array.length(); i++)
+                    {
+                        // odd
+                        if ((i & 1) == 0)
+                        {
+                            id = *array.at(i);
+                            credentials.add({.type = type, .id = id});
+                        }
+                        else
+                        {
+                            type = *array.at(i);
+                        }
+                    }
+
+                    // odd values ​​represent unformed pairs
+                    if (i & 1)
+                    {
+                        // clean file for read new values.
+                        CleanFile(SELF_FILE);
+                        CleanFile(ENTRY_FILE);
+                    }
                 }
 
                 result = ok(credentials);
