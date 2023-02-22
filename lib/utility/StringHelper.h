@@ -11,30 +11,27 @@ namespace utility
     class StringHelper
     {
     public:
-        static ErrorOr<StringArray> splitStringToArray(const String &toSplit, const String &delimiter)
+        static ErrorOr<StringArray> splitStringToArray(const String &toSplit, const char delimiter)
         {
             StringArray array;
-            int start = 0;
-            int end = toSplit.indexOf(delimiter);
-            int last;
+            String buff;
 
-            if (end == -1)
+            for (char c : toSplit)
             {
-                return failure({.context = "Invalid delimiter",
-                                .message = "cannot be found the delimiter"});
+                if (c != delimiter)
+                {
+                    buff.concat(c);
+                }
+                else
+                {
+                    INTERNAL_DEBUG() << "Splitting the payload: " << buff << " (delimiter: " << delimiter << ")";
+                    array.add(buff);
+                    buff.clear();
+                }
             }
 
-            while (end != -1)
-            {
-                auto val = toSplit.substring(start, end - start + 1);
-                array.add(val);
-                Serial.print(val);
-                start = end + delimiter.length();
-                last = end;
-                end = toSplit.indexOf(delimiter, start);
-            }
-
-            array.add(toSplit.substring(last + 1, toSplit.length() - 1));
+            INTERNAL_DEBUG() << "Splitting the payload: " << buff << " (delimiter: " << delimiter << ")";
+            array.add(buff);
 
             return ok<StringArray>(array);
         }

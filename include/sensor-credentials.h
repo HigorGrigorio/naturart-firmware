@@ -13,7 +13,7 @@
 #include <file.h>
 #include <config/file-sistem.h>
 
-#include <ArduinoJson.h>
+#include <StringHelper.h>
 
 /**
  * @brief The credential of a sensor
@@ -59,52 +59,87 @@ auto CredentialsToJson(SensorCredentials &credentials) -> String
     return buff;
 }
 
-auto CreadentialsFromBrokerPayload(String json) -> ErrorOr<SensorCredentials>
+auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
 {
+    INTERNAL_DEBUG() << "Parsing the payload: " << payload;
+
     ErrorOr<SensorCredentials> result;
 
-    auto credentials = SensorCredentials();
-    auto doc = DynamicJsonDocument(json.length() + 1);
-
-    auto err = deserializeJson(doc, json);
-
-    if (err != DeserializationError::Ok)
+    if (payload.length() == 0)
     {
-        result = failure({
-            .context = "creadentialsFromJson",
-            .message = err.c_str(),
-        });
-    }
-    else if (doc.containsKey("success") && doc["success"].as<bool>())
-    {
-        if (!doc.containsKey("body"))
-        {
-            result = failure({
-                .context = "creadentialsFromJson",
-                .message = "The body is missing",
-            });
-        }
-        else
-        {
-            auto list = SensorCredentials();
-
-            for (auto item : doc["body"].as<JsonArray>())
-            {
-                auto type = item["type"].as<String>();
-                auto id = item["id"].as<String>();
-
-                list.add({type, id});
-            }
-
-            result = ok(list);
-        }
+        result = failure({.context = "CredentialsFromBrokerPayload",
+                          .message = "Empty payload"});
     }
     else
     {
-        result = failure({
-            .context = "creadentialsFromJson",
-            .message = (doc.containsKey("message") ? doc["message"].as<const char *>() : "Unknown error"),
-        });
+        auto result1 = utility::StringHelper::splitStringToArray(payload, ';');
+
+        if (!result1.ok())
+        {
+            result = failure(result1.error());
+        }
+        else
+        {
+            INTERNAL_DEBUG() << "Splitting the payload: ;";
+            auto array = result1.unwrap();
+
+            auto successResult = utility::StringHelper::splitStringToArray(*array.at(0), '=');
+
+            if (!successResult.ok())
+            {
+                result = failure(successResult.error());
+            }
+            else
+            {
+                auto success = successResult.unwrap().at(1);
+
+                INTERNAL_DEBUG() << "Success: " << *success << " (" << success->equals("true") << ")";
+
+                if (!success->equals("true"))
+                {
+                    result = failure({
+                        .context = "CredentialsFromBrokerPayload",
+                        .message = "The payload is not valid",
+                    });
+                }
+                else
+                {
+                    INTERNAL_DEBUG() << "Is a success. Parsing credentials...";
+
+                    SensorCredentials credentials;
+                    bool fail = false;
+
+                    for (int i = 1; i < array.length(); i++)
+                    {
+                        auto result2 = utility::StringHelper::splitStringToArray(*array.at(i), '=');
+                        INTERNAL_DEBUG() << "Value: " << *array.at(i) << " (" << result2.ok() << ")";
+
+                        if (!result2.ok())
+                        {
+                            result = failure(result2.error());
+                            fail = true;
+                            break;
+                        }
+                        else
+                        {
+                            auto array2 = result2.unwrap();
+
+                            auto type = array2.at(0);
+                            auto id = array2.at(1);
+
+                            INTERNAL_DEBUG() << "Adding credential: " << *type << " - " << *id;
+
+                            credentials.add({.type = *type, .id = *id});
+                        }
+
+                        if (!fail)
+                        {
+                            result = ok(credentials);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return result;

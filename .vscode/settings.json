@@ -1,7 +1,10 @@
 {
-    "files.associations": {
-        "system_error": "cpp",
-        "string_view": "cpp",
-        "regex": "cpp"
-    }
+  "files.associations": {
+    "system_error": "cpp",
+    "string_view": "cpp",
+    "regex": "cpp",
+    "*.tcc": "cpp",
+    "memory_resource": "cpp",
+    "sstream": "cpp"
+  }
 }
