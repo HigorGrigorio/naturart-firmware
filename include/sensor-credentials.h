@@ -158,7 +158,35 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
     }
     else
     {
-        // TODO: read the file
+        auto readResult = ReadFromFile(SELF_FILE, '\n');
+        if(!readResult.ok())
+        {
+            INTERNAL_DEBUG() << "Failed to read the sensor credentials file";
+            result = failure(readResult.error());
+        }
+        //Unwrap the lines of file
+        else
+        {
+            auto lines = readResult.unwrap();
+
+            if (lines.length() != 2)
+            {
+                INTERNAL_DEBUG() << "The sensor credentials file has not 2 lines.";
+                return failure({
+                    .context = "GetSensorCredentials",
+                    .message = "The sensor credentials file has not 2 lines",
+                });
+            }
+
+            auto firstLine = *lines.at(0);
+            auto secondLine = *lines.at(1);
+            
+           // remove the last character of the lines.
+           return ok<SensorCredentials>({
+                .type = firstLine.substring(0, firstLine.length() - 1),
+                .id = secondLine.substring(0, secondLine.length() - 1),
+            }})
+        }
     }
 
     return result;
