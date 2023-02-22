@@ -73,49 +73,58 @@ auto GetSensorCredentialsFromBroker(UserEntry &entry) -> ErrorOr<>
 
     client.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
                        {
-            INTERNAL_DEBUG() << "Message arrived [" << topic << "]: " << (char *)payload;
+                        
+                        String spayload = "";
+                        spayload.reserve(length);
 
-            if(entry.id != topic) {
-                INTERNAL_DEBUG() << "Invalid topic. Ignoring...";
-                return; 
-            }
+                        for (unsigned int i = 0; i < length; i++)
+                        {
+                            spayload += (char)payload[i];
+                        }
 
-            auto parseResult = CreadentialsFromBrokerPayload((char *)payload);
+                        INTERNAL_DEBUG() << "Message arrived [" << topic << "]: " << spayload;
 
-            if (!parseResult.ok())
-            {
-                INTERNAL_DEBUG() << "Could not extract credentials from json";
-                INTERNAL_DEBUG() << parseResult.error();
-                // forces esp to collect the data again from the user
-                CleanFile(ENTRY_FILE);
-            }
-            else
-            {
-                auto credentials = parseResult.unwrap();
+                        if(entry.id != topic) {
+                            INTERNAL_DEBUG() << "Invalid topic. Ignoring...";
+                            return; 
+                        }
 
-                if (credentials.length() == 0)
-                {
-                    INTERNAL_DEBUG() << "Invalid credentials number";
+                        auto parseResult = CredentialsFromBrokerPayload(spayload);
 
-                    // forces esp to collect the data again from the user
-                    CleanFile(ENTRY_FILE);
-                }
-                else
-                {
-                    auto saveResult = SaveSensorCredentials(credentials);
+                        if (!parseResult.ok())
+                        {
+                            INTERNAL_DEBUG() << "Could not extract credentials from json";
+                            INTERNAL_DEBUG() << parseResult.error();
+                            // forces esp to collect the data again from the user
+                            CleanFile(ENTRY_FILE);
+                        }
+                        else
+                        {
+                            auto credentials = parseResult.unwrap();
 
-                    if (!saveResult.ok())
-                    {
-                        INTERNAL_DEBUG() << saveResult.error();
-                    }
-                    else
-                    {
-                        INTERNAL_DEBUG() << "Saved sensor credentials";
-                    }
-                }
-            }
+                            if (credentials.length() == 0)
+                            {
+                                INTERNAL_DEBUG() << "Invalid credentials number";
 
-            ESP.restart(); });
+                                // forces esp to collect the data again from the user
+                                CleanFile(ENTRY_FILE);
+                            }
+                            else
+                            {
+                                auto saveResult = SaveSensorCredentials(credentials);
+
+                                if (!saveResult.ok())
+                                {
+                                    INTERNAL_DEBUG() << saveResult.error();
+                                }
+                                else
+                                {
+                                    INTERNAL_DEBUG() << "Saved sensor credentials";
+                                }
+                            }
+                        }
+
+                        ESP.restart(); });
 
     client.subscribe(entry.id.c_str());
 

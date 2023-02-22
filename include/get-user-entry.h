@@ -48,7 +48,7 @@ auto GetUserEntryFromWebServer() -> ErrorOr<>
     server.begin();
     TurnOnBuiltInLed();
 
-    INTERNAL_DEBUG() << "Server started. Waiting for WiFi credentials...";
+    INTERNAL_DEBUG() << "Server started. Waiting for user entry...";
 
     while (true)
     {

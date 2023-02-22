@@ -13,7 +13,7 @@
 #include <file.h>
 #include <config/file-sistem.h>
 
-#include <ArduinoJson.h>
+#include <StringHelper.h>
 
 /**
  * @brief The credential of a sensor
@@ -29,82 +29,86 @@ struct SensorType
  */
 using SensorCredentials = LL<struct SensorType>;
 
-auto ToString(SensorType &sensorType) -> String
+auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
 {
-    return "{\"type\":\"" + sensorType.type + ",\"id\":\"" + sensorType.id + "\"}";
-}
+    INTERNAL_DEBUG() << "Parsing the payload: " << payload;
 
-auto CredentialsToJson(SensorCredentials &credentials) -> String
-{
-    String buff = "[";
-
-    for (auto it = credentials.begin(), end = credentials.end(); it != end;)
-    {
-        auto value = *it;
-
-        auto parsedValue = ToString(value);
-
-        buff += parsedValue;
-
-        ++it;
-
-        if (it != end)
-        {
-            buff += ", ";
-        }
-    }
-
-    buff += ']';
-
-    return buff;
-}
-
-auto CreadentialsFromBrokerPayload(String json) -> ErrorOr<SensorCredentials>
-{
     ErrorOr<SensorCredentials> result;
 
-    auto credentials = SensorCredentials();
-    auto doc = DynamicJsonDocument(json.length() + 1);
-
-    auto err = deserializeJson(doc, json);
-
-    if (err != DeserializationError::Ok)
+    if (payload.length() == 0)
     {
-        result = failure({
-            .context = "creadentialsFromJson",
-            .message = err.c_str(),
-        });
-    }
-    else if (doc.containsKey("success") && doc["success"].as<bool>())
-    {
-        if (!doc.containsKey("body"))
-        {
-            result = failure({
-                .context = "creadentialsFromJson",
-                .message = "The body is missing",
-            });
-        }
-        else
-        {
-            auto list = SensorCredentials();
-
-            for (auto item : doc["body"].as<JsonArray>())
-            {
-                auto type = item["type"].as<String>();
-                auto id = item["id"].as<String>();
-
-                list.add({type, id});
-            }
-
-            result = ok(list);
-        }
+        result = failure({.context = "CredentialsFromBrokerPayload",
+                          .message = "Empty payload"});
     }
     else
     {
-        result = failure({
-            .context = "creadentialsFromJson",
-            .message = (doc.containsKey("message") ? doc["message"].as<const char *>() : "Unknown error"),
-        });
+        auto result1 = utility::StringHelper::splitStringToArray(payload, ';');
+
+        if (!result1.ok())
+        {
+            result = failure(result1.error());
+        }
+        else
+        {
+            INTERNAL_DEBUG() << "Splitting the payload...";
+            auto array = result1.unwrap();
+
+            auto successResult = utility::StringHelper::splitStringToArray(*array.at(0), '=');
+
+            if (!successResult.ok())
+            {
+                result = failure(successResult.error());
+            }
+            else
+            {
+                auto success = successResult.unwrap().at(1);
+
+                INTERNAL_DEBUG() << "Success: " << *success << " (" << success->equals("true") << ")";
+
+                if (!success->equals("true"))
+                {
+                    result = failure({
+                        .context = "CredentialsFromBrokerPayload",
+                        .message = "The payload is not valid",
+                    });
+                }
+                else
+                {
+                    INTERNAL_DEBUG() << "Is a success. Parsing credentials...";
+
+                    SensorCredentials credentials;
+                    bool fail = false;
+
+                    for (int i = 1; i < array.length(); i++)
+                    {
+                        auto result2 = utility::StringHelper::splitStringToArray(*array.at(i), '=');
+                        INTERNAL_DEBUG() << "Value: " << *array.at(i) << " (" << result2.ok() << ")";
+
+                        if (result2.ok())
+                        {
+                            auto array2 = result2.unwrap();
+
+                            if (array2.length() == 0)
+                            {
+                                continue;
+                            }
+
+                            auto type = array2.at(0);
+                            auto id = array2.at(1);
+
+                            INTERNAL_DEBUG() << "Adding credential: " << *type << " - " << *id;
+
+                            credentials.add({.type = *type, .id = *id});
+                        }
+
+                        if (!fail)
+                        {
+                            result = ok(credentials);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     return result;
@@ -154,9 +158,12 @@ auto SaveSensorCredentials(SensorCredentials credentials) -> ErrorOr<>
 
         if (file)
         {
-            if (!file.println(CredentialsToJson(credentials)))
+            for (auto &credential : credentials)
             {
-                result = failure({.context = "SaveSensorCredentials", .message = "Writing the file resulted in an error"});
+                INTERNAL_DEBUG() << "Saving credential: " << credential.type << " - " << credential.id;
+
+                file.println(credential.type);
+                file.println(credential.id);
             }
         }
         else
