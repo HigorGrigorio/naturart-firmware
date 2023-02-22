@@ -20,8 +20,6 @@ void setup()
 {
     Serial.begin(9600);
 
-    WiFi.mode(WIFI_AP_STA);
-
     pinMode(LED_BUILTIN, OUTPUT);
     digitalWrite(LED_BUILTIN, LOW);
 
@@ -46,6 +44,10 @@ void setup()
         INTERNAL_DEBUG() << result2.error();
         return;
     }
+
+    INTERNAL_DEBUG() << "Synced successfully";
+
+
 }
 
 void loop()

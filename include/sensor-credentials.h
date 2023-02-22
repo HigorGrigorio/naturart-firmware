@@ -127,7 +127,44 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
     }
     else
     {
-        // TODO: read the file
+        auto openResult = OpenFile(SELF_FILE, "r");
+
+        if (!openResult.ok())
+        {
+            result = failure(openResult.error());
+        }
+        else
+        {
+            File file = openResult.unwrap();
+
+            if (file)
+            {
+                String type;
+                String id;
+                SensorCredentials credentials;
+
+                while (file.available())
+                {
+                    type = file.readStringUntil('\r\n');
+                    id = file.readStringUntil('\r\n');
+
+                    INTERNAL_DEBUG() << "Reading credential: '" << type << "' - '" << id << "'.";
+
+                    credentials.add({.type = type, .id = id});
+                }
+
+                result = ok(credentials);
+            }
+            else
+            {
+                result = failure({
+                    .context = "GetSensorCredentials",
+                    .message = "Opening the file resulted in an error",
+                });
+            }
+
+            file.close();
+        }
     }
 
     return result;

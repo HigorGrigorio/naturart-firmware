@@ -41,6 +41,8 @@ auto WiFiConnect(WiFiCredentials &credentials) -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Connecting to WiFi...";
 
+    WiFi.mode(WIFI_STA);
+
     WiFi.begin(credentials.ssid, credentials.password);
 
     if (WiFi.waitForConnectResult() != WL_CONNECTED)
