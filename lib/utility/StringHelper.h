@@ -16,7 +16,6 @@ namespace utility
             StringArray array;
             String buff;
 
-<<<<<<< HEAD
             if (toSplit.length() == 0)
             {
                 return failure({
@@ -41,22 +40,6 @@ namespace utility
                 }
             }
 
-=======
-            for (char c : toSplit)
-            {
-                if (c != delimiter)
-                {
-                    buff.concat(c);
-                }
-                else
-                {
-                    INTERNAL_DEBUG() << "Splitting the payload: " << buff << " (delimiter: " << delimiter << ")";
-                    array.add(buff);
-                    buff.clear();
-                }
-            }
-
->>>>>>> acdaf4d018b5c402ba64d33fb24c99ee018a81f6
             INTERNAL_DEBUG() << "Splitting the payload: " << buff << " (delimiter: " << delimiter << ")";
             array.add(buff);
 
