@@ -1,31 +1,30 @@
 /**
- * @file get-sensor-credentials-from-broker.h
- * @brief Gets the sensor credentials from the broker.
- * @details This file contains the functions to get the sensor credentials from the broker.
+ * @file get-sensor-id-from-broker.h
+ * @brief Gets the sensor id from the broker.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
- * @version 1.0.0
- * @date 2021-07-10
+ * @version 1.0
+ * @date 2019-04-10
  *
  */
 
-#ifndef _GetSensorCredentialsFromBroker_h
-#define _GetSensorCredentialsFromBroker_h
+#ifndef _GetSensorIdFromBroker_h_
+#define _GetSensorIdFromBroker_h_
 
-#include <PubSubClient.h>
-
-#include <sensor-typing.h>
 #include <user-entry.h>
 #include <wifi-connection.h>
 #include <uuid-factory.h>
+#include <sensor-self.h>
+
+#include <PubSubClient.h>
 
 /**
- * @brief Sync the sensor credentials by local host.
+ * @brief Gets the sensor id from the broker.
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
+auto GetSensorIdFromBroker(UserEntry &entry) -> ErrorOr<>
 {
-    INTERNAL_DEBUG() << "Syncing sensor credentials by naturart broker...";
+    INTERNAL_DEBUG() << "Syncing sensor id by naturart broker...";
 
     if (WiFi.status() != WL_CONNECTED)
     {
@@ -38,7 +37,7 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
     // using a fake broker to monitorize the connection.
     const char *host = "broker.hivemq.com";
 
-    String uuid = makeUUID();
+    entry.id = makeUUID();
 
     WiFiClient espClient;
 
@@ -68,8 +67,8 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
     reconnect();
 
     client.setCallback([&](char *topic, byte *payload, unsigned int length) -> void
-                       {
-                        if(uuid != topic) {
+                       {   
+                        if(entry.id != topic) {
                             INTERNAL_DEBUG() << "Invalid topic. Ignoring...";
                             return; 
                         }
@@ -85,7 +84,7 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
                         INTERNAL_DEBUG() << "Message arrived [" << topic << "]: " << spayload;
 
 
-                        auto parseResult = CredentialsFromBrokerPayload(spayload);
+                        auto parseResult = SelfFromBrokerPayload(spayload);
 
                         if (!parseResult.ok())
                         {
@@ -96,9 +95,9 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
                         }
                         else
                         {
-                            auto credentials = parseResult.unwrap();
+                            auto id = parseResult.unwrap();
 
-                            if (credentials.length() == 0)
+                            if (id.length() == 0)
                             {
                                 INTERNAL_DEBUG() << "Invalid credentials number";
 
@@ -107,7 +106,7 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
                             }
                             else
                             {
-                                auto saveResult = SaveSensorCredentials(credentials);
+                                auto saveResult = SaveSelf(id);
 
                                 if (!saveResult.ok())
                                 {
@@ -122,13 +121,11 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
 
                         ESP.restart(); });
 
-    client.subscribe(uuid.c_str());
+    client.subscribe(entry.id.c_str());
 
-    INTERNAL_DEBUG() << "Subcribed on topic '" << uuid.c_str() << "'";
+    INTERNAL_DEBUG() << "Subcribed on topic '" << entry.id.c_str() << "'";
 
-    String json = "{\"uuid\": \"" + uuid + "\", \"id\": \"" + id + "\"}";
-
-    client.publish("credentials", json.c_str());
+    client.publish("sync", entry.ToJson().c_str());
 
     // Await the payload of broker to restart.
     while (true)
@@ -146,4 +143,4 @@ auto GetSensorCredentialsFromBroker(String &id) -> ErrorOr<>
     return ok();
 }
 
-#endif // ! _GetSensorCredentialsFromBroker_h
+#endif // ! _GetSensorIdFromBroker_h_

@@ -11,6 +11,7 @@
 #define _SyncSensorCredentials_h
 
 #include <get-sensor-credentials-from-broker.h>
+#include <get-sensor-id-from-broker.h>
 #include <get-user-entry.h>
 
 /**
@@ -22,7 +23,7 @@ auto SyncSensor() -> ErrorOr<>
 {
     ErrorOr<> result = ok();
 
-    if (IsEmptyFile(SELF_FILE))
+    if (IsEmptyFile(TYPING_FILE))
     {
         if (IsEmptyFile(ENTRY_FILE))
         {
@@ -35,23 +36,52 @@ auto SyncSensor() -> ErrorOr<>
         if (!entryResult.ok())
         {
             INTERNAL_DEBUG() << entryResult.error();
+
             result = failure({
                 .context = "SyncSensor",
                 .message = "Failed to get user entry",
             });
         }
-
-        UserEntry userEntry = entryResult.unwrap();
-
-        auto credentilsResult = GetSensorCredentialsFromBroker(userEntry);
-
-        if (!credentilsResult.ok())
+        else
         {
-            INTERNAL_DEBUG() << credentilsResult.error();
-            result = failure({
-                .context = "SyncSensor",
-                .message = "Failed to get sensor credentials",
-            });
+
+            UserEntry userEntry = entryResult.unwrap();
+
+            if (IsEmptyFile(SELF_FILE))
+            {
+                GetSensorIdFromBroker(userEntry);
+            }
+
+            auto selfResult = LoadSelf();
+
+            if (!selfResult.ok())
+            {
+                INTERNAL_DEBUG() << selfResult.error();
+
+                result = failure({
+                    .context = "SyncSensor",
+                    .message = "Failed to get sensor id",
+                });
+            }
+            else
+            {
+                auto id = selfResult.unwrap();
+
+                if (IsEmptyFile(TYPING_FILE))
+                {
+                    GetSensorCredentialsFromBroker(id);
+                }
+
+                if (!selfResult.ok())
+                {
+                    INTERNAL_DEBUG() << selfResult.error();
+
+                    result = failure({
+                        .context = "SyncSensor",
+                        .message = "Failed to get sensor credentials",
+                    });
+                }
+            }
         }
     }
 

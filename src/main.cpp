@@ -6,7 +6,7 @@
 
 #include <config/system.h>
 #include <config/dns-server.h>
-#include <config/file-sistem.h>
+#include <config/file-system.h>
 #include <config/web-server.h>
 
 #include <Arduino.h>
@@ -47,7 +47,7 @@ void setup()
 
     INTERNAL_DEBUG() << "Synced successfully";
 
-
+    auto credentials = GetSensorCredentials();
 }
 
 void loop()

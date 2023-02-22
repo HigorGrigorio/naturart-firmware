@@ -11,7 +11,7 @@
 #define _GetSensorCredentialsFromUser_h
 
 #include <wifi-connection.h>
-#include <sensor-credentials.h>
+#include <sensor-typing.h>
 #include <web-server-factory.h>
 #include <dns-server-factory.h>
 #include <blink-led.h>

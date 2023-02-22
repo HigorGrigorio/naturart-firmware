@@ -11,7 +11,7 @@
 #define _SensorCredentials_h_
 
 #include <file.h>
-#include <config/file-sistem.h>
+#include <config/file-system.h>
 
 #include <StringHelper.h>
 
@@ -118,7 +118,7 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
 {
     auto result = ErrorOr<SensorCredentials>();
 
-    if (!FileExists(SELF_FILE))
+    if (!FileExists(TYPING_FILE))
     {
         result = failure({
             .context = "GetSensorCredentials",
@@ -127,7 +127,7 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
     }
     else
     {
-        auto openResult = OpenFile(SELF_FILE, "r");
+        auto openResult = OpenFile(TYPING_FILE, "r");
 
         if (!openResult.ok())
         {
@@ -143,7 +143,7 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
                 String id;
                 SensorCredentials credentials;
 
-                auto readResult = ReadFromFile(SELF_FILE, '\n');
+                auto readResult = ReadFromFile(TYPING_FILE, '\n');
 
                 if (!readResult.ok())
                 {
@@ -158,23 +158,28 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
                     for (; i < array.length(); i++)
                     {
                         // odd
-                        if ((i & 1) == 0)
+                        if ((i & 1))
                         {
-                            id = *array.at(i);
+                            id = (*array.at(i)).substring(0, (*array.at(i)).length() - 1);
+                            INTERNAL_DEBUG() << "Read id: '" << id << "'";
+                            INTERNAL_DEBUG() << "Reload credential: " << type << " - " << id;
                             credentials.add({.type = type, .id = id});
                         }
                         else
                         {
-                            type = *array.at(i);
+                            type = (*array.at(i)).substring(0, (*array.at(i)).length() - 1);
+                            INTERNAL_DEBUG() << "Read type: '" << type << "'";
                         }
                     }
 
                     // odd values ​​represent unformed pairs
                     if (i & 1)
                     {
-                        // clean file for read new values.
-                        CleanFile(SELF_FILE);
+                        // clean file for read new values. Forces a new registration.
+                        CleanFile(TYPING_FILE);
                         CleanFile(ENTRY_FILE);
+
+                        ESP.restart();
                     }
                 }
 
@@ -202,12 +207,12 @@ auto SaveSensorCredentials(SensorCredentials credentials) -> ErrorOr<>
     INTERNAL_DEBUG()
         << "Saving sensor credentials";
 
-    if (!FileExists(SELF_FILE))
+    if (!FileExists(TYPING_FILE))
     {
-        CreateFile(SELF_FILE);
+        CreateFile(TYPING_FILE);
     }
 
-    auto openResult = OpenFile(SELF_FILE, "w");
+    auto openResult = OpenFile(TYPING_FILE, "w");
 
     if (!openResult.ok())
     {
