@@ -33,38 +33,6 @@ auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
 {
     INTERNAL_DEBUG() << "Parsing the payload: " << payload;
 
-<<<<<<< HEAD
-=======
-auto CredentialsToJson(SensorCredentials &credentials) -> String
-{
-    String buff = "[";
-
-    for (auto it = credentials.begin(), end = credentials.end(); it != end;)
-    {
-        auto value = *it;
-
-        auto parsedValue = ToString(value);
-
-        buff += parsedValue;
-
-        ++it;
-
-        if (it != end)
-        {
-            buff += ", ";
-        }
-    }
-
-    buff += ']';
-
-    return buff;
-}
-
-auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
-{
-    INTERNAL_DEBUG() << "Parsing the payload: " << payload;
-
->>>>>>> acdaf4d018b5c402ba64d33fb24c99ee018a81f6
     ErrorOr<SensorCredentials> result;
 
     if (payload.length() == 0)
@@ -82,11 +50,7 @@ auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
         }
         else
         {
-<<<<<<< HEAD
             INTERNAL_DEBUG() << "Splitting the payload...";
-=======
-            INTERNAL_DEBUG() << "Splitting the payload: ;";
->>>>>>> acdaf4d018b5c402ba64d33fb24c99ee018a81f6
             auto array = result1.unwrap();
 
             auto successResult = utility::StringHelper::splitStringToArray(*array.at(0), '=');
@@ -120,7 +84,6 @@ auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
                         auto result2 = utility::StringHelper::splitStringToArray(*array.at(i), '=');
                         INTERNAL_DEBUG() << "Value: " << *array.at(i) << " (" << result2.ok() << ")";
 
-<<<<<<< HEAD
                         if (result2.ok())
                         {
                             auto array2 = result2.unwrap();
@@ -130,18 +93,6 @@ auto CredentialsFromBrokerPayload(String &payload) -> ErrorOr<SensorCredentials>
                                 continue;
                             }
 
-=======
-                        if (!result2.ok())
-                        {
-                            result = failure(result2.error());
-                            fail = true;
-                            break;
-                        }
-                        else
-                        {
-                            auto array2 = result2.unwrap();
-
->>>>>>> acdaf4d018b5c402ba64d33fb24c99ee018a81f6
                             auto type = array2.at(0);
                             auto id = array2.at(1);
 
