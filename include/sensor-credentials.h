@@ -145,8 +145,8 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
 
                 while (file.available())
                 {
-                    type = file.readStringUntil('\r\n');
-                    id = file.readStringUntil('\r\n');
+                    type = file.readStringUntil("\r\n");
+                    id = file.readStringUntil("\r\n");
 
                     INTERNAL_DEBUG() << "Reading credential: '" << type << "' - '" << id << "'.";
 
