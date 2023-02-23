@@ -1,3 +1,12 @@
+/**
+ * @file Nonnull.h
+ * @brief This file contains the implementation of the Nonnull type.
+ * @details This file contains the implementation of the Nonnull type
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
 #ifndef _Nonnull_h_
 #define _Nonnull_h_
 

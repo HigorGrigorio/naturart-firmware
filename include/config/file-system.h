@@ -1,3 +1,13 @@
+/**
+ * @file file-system.h
+ * @brief The file system configuration.
+ * @details The file system configuration.
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @date 2023-07-10
+ * @version 1.0.0
+ * 
+*/
+
 #ifndef _FileSistemConfig_h_
 #define _FileSistemConfig_h_
 
@@ -20,5 +30,10 @@
  * @brief The path to the file that contains the typing data.
  */
 #define TYPING_FILE "/cache/typing.txt"
+
+/**
+ * @brief The path to the file that contains the measure data.
+ */
+#define MEASURE_FILE "/cache/measure.txt"
 
 #endif // ! _FileSistemConfig_h_

@@ -1,3 +1,12 @@
+/**
+ * @file UtilStringArray.h
+ * @brief This file contains the implementation of the StringArray class.
+ * @details This file contains the implementation of the StringArray class
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
 #ifndef ESP8266_STRING_ARRAY
 #define ESP8266_STRING_ARRAY
 

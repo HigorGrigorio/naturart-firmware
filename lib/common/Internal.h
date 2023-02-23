@@ -1,6 +1,6 @@
 /**
  * @file internal.h
- * @author your name (you@domain.com)
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @brief A internal stream to receives an runtime error.
  * @version 0.1
  * @date 2023-01-25

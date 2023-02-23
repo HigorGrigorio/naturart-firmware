@@ -1,12 +1,12 @@
 /**
- * @file uuid.h 
+ * @file uuid.h
  * @brief This file contains the implementation of the UUID helpers.
  * @details This file contains the implementation of the UUID helpers
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
- * @date 2021-07-10
- *  
-*/
+ * @date 2023-07-10
+ *
+ */
 
 #ifndef _UUID_h
 #define _UUID_h

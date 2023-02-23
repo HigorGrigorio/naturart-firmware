@@ -3,7 +3,7 @@
  * @brief Sensor credentials
  * @details This file contains declarations and functions for manipuling the credentials of the sensors.
  * @version 1.0
- * @date 2021-04-15
+ * @date 2023-07-10
  *
  */
 

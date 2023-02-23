@@ -16,6 +16,9 @@
 #include <sync-sensor-credentials.h>
 #include <sync-wifi.h>
 
+// #include <send-measure-to-broker.h>
+#include <read-measure.h>
+
 void setup()
 {
     Serial.begin(9600);

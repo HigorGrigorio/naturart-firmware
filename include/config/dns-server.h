@@ -4,9 +4,9 @@
  * @details This file contains the functions to configure the dns server.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
- * @date 2020-05-01
- * 
-*/
+ * @date 2023-23-2
+ *
+ */
 
 #ifndef _DnsServerConfig_h_
 #define _DnsServerConfig_h_

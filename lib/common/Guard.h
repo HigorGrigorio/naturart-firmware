@@ -1,3 +1,12 @@
+/**
+ * @file Guard.h
+ * @brief This file contains the implementation of the Guard class.
+ * @details This file contains the implementation of the Guard class
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
 #ifndef _Guard_h_
 #define _Guard_h_
 

@@ -1,3 +1,12 @@
+/**
+ * @file LinkedList.h
+ * @brief This file contains the implementation of the LinkedList class.
+ * @details This file contains the implementation of the LinkedList class
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
 #ifndef ESP8266_LINKED_LIST
 #define ESP8266_LINKED_LIST
 

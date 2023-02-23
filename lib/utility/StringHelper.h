@@ -1,3 +1,13 @@
+/**
+ * @file StringHelper.h
+ * @brief String helper
+ * @details This file contains the implementation of the string helper
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
+
 #ifndef ESP8266_STRING_HELPER
 #define ESP8266_STRING_HELPER
 

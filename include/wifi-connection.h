@@ -3,7 +3,7 @@
  * @brief defines the function ConnectWifi
  * @details This file contains the function ConnectWifi which is used to connect to the wifi network
  * @version 1.0
- * @date 2021-04-15
+ * @date 2023-07-10
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  *
  */

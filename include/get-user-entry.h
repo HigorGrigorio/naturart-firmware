@@ -3,7 +3,7 @@
  * @brief Gets the sensor credentials from the user.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
- * @date 2021-07-10
+ * @date 2023-07-10
  *
  */
 

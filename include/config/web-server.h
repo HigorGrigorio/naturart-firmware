@@ -4,7 +4,7 @@
  * @details This file contains the functions to configure the web server.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0.0
- * @date 2020-05-01
+ * @date 2023-07-10
  *
  */
 

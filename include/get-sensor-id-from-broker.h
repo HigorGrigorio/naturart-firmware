@@ -3,7 +3,7 @@
  * @brief Gets the sensor id from the broker.
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  * @version 1.0
- * @date 2019-04-10
+ * @date 2023-07-10
  *
  */
 

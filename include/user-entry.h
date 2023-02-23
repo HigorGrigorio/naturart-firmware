@@ -3,7 +3,7 @@
  * @brief User entry
  * @details This file contains declarations and functions for manipuling the user entry.
  * @version 1.0
- * @date 2021-04-15
+ * @date 2023-07-10
  *
  */
 

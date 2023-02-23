@@ -1,3 +1,11 @@
+/**
+ * @file ErrorOr.h
+ * @brief ErrorOr class
+ * @author Higor Grigorio <higorgrigorio@gmail.com>
+ * @version 1.0.0
+ * @date 2023-07-10
+ * 
+*/
 #ifndef _ErrorOr_h_
 #define _ErrorOr_h_
 

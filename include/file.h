@@ -3,7 +3,7 @@
  * @brief defines the function for manipuling files.
  * @details This file contains the function for manipuling files.
  * @version 1.0
- * @date 2021-04-15
+ * @date 2023-07-10
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  *
  */
