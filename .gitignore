@@ -6,4 +6,7 @@
 
 .data/session.txt
 
+./cmake-build-debug
+./cmake-build-nodemcuv2
+
 .http

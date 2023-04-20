@@ -4,14 +4,7 @@
  * @author Higor Grigorio <higorgrigorio@gmail.com>
  */
 
-#include <config/system.h>
-#include <config/dns-server.h>
-#include <config/file-system.h>
-#include <config/web-server.h>
-
 #include <Arduino.h>
-
-#include <PubSubClient.h>
 
 #include <sync-sensor-credentials.h>
 #include <sync-wifi.h>

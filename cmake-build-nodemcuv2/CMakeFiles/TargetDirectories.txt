@@ -1,0 +1,5 @@
+C:/Users/higor/Desktop/Naturart/hardware/naturart-firmware/cmake-build-nodemcuv2/CMakeFiles/Production.dir
+C:/Users/higor/Desktop/Naturart/hardware/naturart-firmware/cmake-build-nodemcuv2/CMakeFiles/Debug.dir
+C:/Users/higor/Desktop/Naturart/hardware/naturart-firmware/cmake-build-nodemcuv2/CMakeFiles/Z_DUMMY_TARGET.dir
+C:/Users/higor/Desktop/Naturart/hardware/naturart-firmware/cmake-build-nodemcuv2/CMakeFiles/edit_cache.dir
+C:/Users/higor/Desktop/Naturart/hardware/naturart-firmware/cmake-build-nodemcuv2/CMakeFiles/rebuild_cache.dir
