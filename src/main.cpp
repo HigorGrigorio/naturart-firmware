@@ -42,8 +42,6 @@ void setup()
     }
 
     INTERNAL_DEBUG() << "Synced successfully";
-
-    auto credentials = GetSensorCredentials();
 }
 
 void loop()

@@ -21,7 +21,7 @@
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetUserEntryFromWebServer() -> ErrorOr<>
+[[noreturn]] auto GetUserEntryFromWebServer() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor credentials from Naturart server...";
 
@@ -42,8 +42,8 @@ auto GetUserEntryFromWebServer() -> ErrorOr<>
     // Need initialization of server.
     auto server = MakeWebServerBase();
 
-    // contruct the handlers of web server.
-    ContructWebServerToUserCredentialsConfig(server);
+    // construct the handlers of web server.
+    ConstructWebServerToUserCredentialsConfig(server);
 
     server.begin();
     TurnOnBuiltInLed();
@@ -60,7 +60,6 @@ auto GetUserEntryFromWebServer() -> ErrorOr<>
      * The ESP8266 will be restarted by the web server and the wifi credentials is saved in the file system.
      * Then the credentials will be read from the file system. So, this function will never return.
      */
-    return ok();
 }
 
 #endif // ! _GetSensorCredentialsFromUser_h

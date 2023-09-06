@@ -172,7 +172,7 @@ auto GetSensorCredentials() -> ErrorOr<SensorCredentials>
                         }
                     }
 
-                    // odd values ​​represent unformed pairs
+                    // odd values represents unformed pairs
                     if (i & 1)
                     {
                         // clean file for read new values. Forces a new registration.

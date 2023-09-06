@@ -22,7 +22,7 @@
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetSensorIdFromBroker(UserEntry &entry) -> ErrorOr<>
+[[noreturn]] auto GetSensorIdFromBroker(UserEntry &entry) -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing sensor id by naturart broker...";
 
@@ -138,9 +138,6 @@ auto GetSensorIdFromBroker(UserEntry &entry) -> ErrorOr<>
         client.loop();
         delay(10);
     }
-
-    // Never return.
-    return ok();
 }
 
 #endif // ! _GetSensorIdFromBroker_h_

@@ -44,7 +44,6 @@ auto SyncSensor() -> ErrorOr<>
         }
         else
         {
-
             UserEntry userEntry = entryResult.unwrap();
 
             if (IsEmptyFile(SELF_FILE))

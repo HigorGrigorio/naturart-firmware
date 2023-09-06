@@ -32,7 +32,7 @@ auto SyncWiFi() -> ErrorOr<>
 
     INTERNAL_DEBUG() << result.error();
 
-    auto result2 = GetWiFiCredentilasFromUser();
+    auto result2 = GetWiFiCredentialsFromUser();
 
     if (result2.ok())
     {

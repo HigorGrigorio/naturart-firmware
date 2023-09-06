@@ -1,4 +1,4 @@
-POST http://192.168.1.1/wifi
+POST http://192.168.1.1
 Content-Type: application/x-www-form-urlencoded
 
 POST http://192.168.1.1/sync

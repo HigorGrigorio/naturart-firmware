@@ -21,7 +21,7 @@
  *
  * @return ErrorOr<> can be ok() or failure()
  */
-auto GetWiFiCredentilasFromUser() -> ErrorOr<>
+auto GetWiFiCredentialsFromUser() -> ErrorOr<>
 {
     INTERNAL_DEBUG() << "Syncing WiFi by local host...";
 
